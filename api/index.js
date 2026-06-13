@@ -28,7 +28,7 @@ if (process.env.FIREBASE_PRIVATE_KEY) {
         console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT env variable:', e);
     }
 } else {
-    const serviceAccountPath = path.join(__dirname, 'firebase-service-account.json');
+    const serviceAccountPath = path.join(__dirname, '..', 'firebase-service-account.json');
     if (fs.existsSync(serviceAccountPath)) {
         serviceAccount = require(serviceAccountPath);
     }
@@ -65,7 +65,7 @@ const JWT_SECRET = 'super-secret-jwt-key-for-users'; // In production, use env v
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, '..')));
 
 // Middleware to check if database is initialized
 app.use((req, res, next) => {
@@ -77,7 +77,7 @@ app.use((req, res, next) => {
 
 // Route to serve admin panel
 app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'admin.html'));
+    res.sendFile(path.join(__dirname, '..', 'admin.html'));
 });
 
 // Configure multer for memory storage (direct upload to Cloudinary)
