@@ -1,9 +1,23 @@
 let data = {};
 
+// Detect the API base URL: use the server API if available, otherwise load static files
+const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+
 async function init() {
     try {
-        const response = await fetch('http://localhost:3000/api/data');
-        if (!response.ok) throw new Error('Network response was not ok');
+        // Try the API first, then fall back to loading data.json directly
+        let response;
+        try {
+            response = await fetch(API_BASE + '/api/data');
+        } catch(e) {
+            // API not available, load data.json as a static file
+            response = await fetch('./data.json');
+        }
+        if (!response.ok) {
+            // API returned an error, try static file
+            response = await fetch('./data.json');
+        }
+        if (!response.ok) throw new Error('Could not load data');
         data = await response.json();
         setupSearch();
         renderPage();
@@ -12,8 +26,7 @@ async function init() {
         document.getElementById('content-container').innerHTML = `
             <div style="padding: 40px; text-align: center;">
                 <h2>Error Loading Data</h2>
-                <p>Please make sure you are running the Node.js server.</p>
-                <code>npm start</code>
+                <p>Could not load website data. Please try refreshing.</p>
             </div>
         `;
     }
@@ -177,7 +190,7 @@ async function checkAuthStatus() {
     const token = localStorage.getItem('userToken');
     if (token) {
         try {
-            const res = await fetch('http://localhost:3000/api/users/profile', {
+            const res = await fetch(API_BASE + '/api/users/profile', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -204,14 +217,14 @@ function updateAuthUI() {
         unauthSection.style.display = 'none';
         authSection.style.display = 'flex';
         document.getElementById('navUserName').textContent = currentUser.username;
-        document.getElementById('navProfilePic').src = currentUser.profilePic ? `http://localhost:3000${currentUser.profilePic}` : 'https://api.dicebear.com/6.x/initials/svg?seed=' + currentUser.name;
+        document.getElementById('navProfilePic').src = currentUser.profilePic ? `${API_BASE}${currentUser.profilePic}` : 'https://api.dicebear.com/6.x/initials/svg?seed=' + currentUser.name;
         
         // Populate profile form
         document.getElementById('profName').value = currentUser.name || '';
         document.getElementById('profUsername').value = currentUser.username || '';
         document.getElementById('profEmail').value = currentUser.email || '';
-        document.getElementById('profilePicPreview').src = currentUser.profilePic ? `http://localhost:3000${currentUser.profilePic}` : 'https://api.dicebear.com/6.x/initials/svg?seed=' + currentUser.name;
-        document.getElementById('profileBannerPreview').src = currentUser.profileBanner ? `http://localhost:3000${currentUser.profileBanner}` : '';
+        document.getElementById('profilePicPreview').src = currentUser.profilePic ? `${API_BASE}${currentUser.profilePic}` : 'https://api.dicebear.com/6.x/initials/svg?seed=' + currentUser.name;
+        document.getElementById('profileBannerPreview').src = currentUser.profileBanner ? `${API_BASE}${currentUser.profileBanner}` : '';
     } else {
         unauthSection.style.display = 'block';
         authSection.style.display = 'none';
@@ -236,7 +249,7 @@ async function handleLogin() {
     const p = document.getElementById('loginPassword').value;
     const err = document.getElementById('loginError');
     try {
-        const res = await fetch('http://localhost:3000/api/users/login', {
+        const res = await fetch(API_BASE + '/api/users/login', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({username: u, password: p})
@@ -265,7 +278,7 @@ async function handleRegister() {
     const p = document.getElementById('regPassword').value;
     const err = document.getElementById('regError');
     try {
-        const res = await fetch('http://localhost:3000/api/users/register', {
+        const res = await fetch(API_BASE + '/api/users/register', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({username: u, email: e, password: p, name})
@@ -306,7 +319,7 @@ async function handleProfileUpdate() {
 
     try {
         const token = localStorage.getItem('userToken');
-        const res = await fetch('http://localhost:3000/api/users/profile', {
+        const res = await fetch(API_BASE + '/api/users/profile', {
             method: 'POST',
             headers: {'Authorization': `Bearer ${token}`},
             body: formData
