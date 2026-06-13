@@ -594,11 +594,26 @@ function handleLogout() {
     closeModals();
 }
 
-function previewImage(input, previewId) {
+function previewImage(input, previewId, containerId) {
     if (input.files && input.files[0]) {
         var reader = new FileReader();
         reader.onload = function(e) {
-            document.getElementById(previewId).src = e.target.result;
+            const preview = document.getElementById(previewId);
+            if (preview) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            }
+            if (containerId) {
+                const container = document.getElementById(containerId);
+                if (container) {
+                    // Hide any other placeholder elements inside the upload container
+                    for (let child of container.children) {
+                        if (child.id !== previewId) {
+                            child.style.display = 'none';
+                        }
+                    }
+                }
+            }
         }
         reader.readAsDataURL(input.files[0]);
     }
