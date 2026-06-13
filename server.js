@@ -14,7 +14,14 @@ const { getFirestore } = require('firebase-admin/firestore');
 
 // Initialize Firebase Admin
 let serviceAccount;
-if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+
+if (process.env.FIREBASE_PRIVATE_KEY) {
+    serviceAccount = {
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+    };
+} else if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     try {
         serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
     } catch (e) {
@@ -27,15 +34,19 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     }
 }
 
+let db;
 if (serviceAccount) {
-    initializeApp({
-        credential: cert(serviceAccount)
-    });
+    try {
+        initializeApp({
+            credential: cert(serviceAccount)
+        });
+        db = getFirestore();
+    } catch (err) {
+        console.error("Firebase initialization failed:", err);
+    }
 } else {
-    console.error("Firebase Service Account credentials not found! Ensure FIREBASE_SERVICE_ACCOUNT env or firebase-service-account.json exists.");
+    console.error("Firebase Service Account credentials not found! Ensure FIREBASE_PRIVATE_KEY or FIREBASE_SERVICE_ACCOUNT is set.");
 }
-
-const db = getFirestore();
 
 // Configure Cloudinary
 cloudinary.config({
@@ -55,6 +66,14 @@ const JWT_SECRET = 'super-secret-jwt-key-for-users'; // In production, use env v
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
+
+// Middleware to check if database is initialized
+app.use((req, res, next) => {
+    if (!db && req.path.startsWith('/api')) {
+        return res.status(500).json({ success: false, message: 'Database connection is not initialized. Check server logs.' });
+    }
+    next();
+});
 
 // Route to serve admin panel
 app.get('/admin', (req, res) => {
