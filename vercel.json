@@ -18,6 +18,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "data.json",
+      "use": "@vercel/static"
+    },
+    {
       "src": "admin-bg.jpg",
       "use": "@vercel/static"
     }
