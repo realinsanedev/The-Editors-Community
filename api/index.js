@@ -45,6 +45,27 @@ if (process.env.FIREBASE_PRIVATE_KEY) {
 let db;
 if (serviceAccount) {
     try {
+        const pk = serviceAccount.privateKey || serviceAccount.private_key || '';
+        console.log(`[Diagnostic] Private Key length: ${pk.length}`);
+        console.log(`[Diagnostic] Starts with standard header: ${pk.startsWith('-----BEGIN PRIVATE KEY-----')}`);
+        console.log(`[Diagnostic] Ends with standard footer: ${pk.trim().endsWith('-----END PRIVATE KEY-----')}`);
+        console.log(`[Diagnostic] Contains actual newlines: ${pk.includes('\n')}`);
+        console.log(`[Diagnostic] Contains literal '\\n' text: ${pk.includes('\\n')}`);
+        
+        // Final cleanup helper to force format
+        let cleanKey = pk.trim();
+        if (cleanKey.startsWith('"') && cleanKey.endsWith('"')) {
+            cleanKey = cleanKey.slice(1, -1);
+        }
+        cleanKey = cleanKey.replace(/\\n/g, '\n');
+        
+        // Ensure private key has normalized newlines and correct format
+        if (serviceAccount.privateKey) {
+            serviceAccount.privateKey = cleanKey;
+        } else {
+            serviceAccount.private_key = cleanKey;
+        }
+
         initializeApp({
             credential: cert(serviceAccount)
         });
