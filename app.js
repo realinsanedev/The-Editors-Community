@@ -485,6 +485,17 @@ async function handleRegister() {
     const bannerFile = document.getElementById('regBannerUpload').files[0];
     const err = document.getElementById('regError');
     
+    if (picFile && picFile.size > 2 * 1024 * 1024) {
+        err.textContent = "Profile picture size must be under 2MB.";
+        err.style.display = 'block';
+        return;
+    }
+    if (bannerFile && bannerFile.size > 2 * 1024 * 1024) {
+        err.textContent = "Profile banner size must be under 2MB.";
+        err.style.display = 'block';
+        return;
+    }
+    
     const formData = new FormData();
     formData.append('name', name);
     formData.append('username', u);
@@ -523,6 +534,17 @@ async function handleProfileUpdate() {
     const picFile = document.getElementById('picUpload').files[0];
     const bannerFile = document.getElementById('bannerUpload').files[0];
     const err = document.getElementById('profError');
+
+    if (picFile && picFile.size > 2 * 1024 * 1024) {
+        err.textContent = "Profile picture size must be under 2MB.";
+        err.style.display = 'block';
+        return;
+    }
+    if (bannerFile && bannerFile.size > 2 * 1024 * 1024) {
+        err.textContent = "Profile banner size must be under 2MB.";
+        err.style.display = 'block';
+        return;
+    }
 
     const formData = new FormData();
     formData.append('name', name);
@@ -732,6 +754,12 @@ async function handleForumPost() {
     const image = document.getElementById('forumPostImage').files[0];
     const err = document.getElementById('forumPostError');
 
+    if (image && image.size > 2 * 1024 * 1024) {
+        err.textContent = "Attached image size must be under 2MB.";
+        err.style.display = 'block';
+        return;
+    }
+
     if (!title || !content) {
         err.textContent = "Title and description are required.";
         err.style.display = 'block';
@@ -777,6 +805,12 @@ async function handleForumReply(postId) {
     const content = document.getElementById('replyContent').value.trim();
     const image = document.getElementById('replyImage').files[0];
     const err = document.getElementById('replyError');
+
+    if (image && image.size > 2 * 1024 * 1024) {
+        err.textContent = "Attached image size must be under 2MB.";
+        err.style.display = 'block';
+        return;
+    }
 
     if (!content) {
         err.textContent = "Reply content is required.";
