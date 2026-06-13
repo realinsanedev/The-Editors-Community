@@ -16,10 +16,18 @@ const { getFirestore } = require('firebase-admin/firestore');
 let serviceAccount;
 
 if (process.env.FIREBASE_PRIVATE_KEY) {
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY.trim();
+    // Remove enclosing quotes if they were copied from the JSON file
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+        privateKey = privateKey.slice(1, -1);
+    }
+    // Replace escaped newlines
+    privateKey = privateKey.replace(/\\n/g, '\n');
+
     serviceAccount = {
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+        privateKey: privateKey
     };
 } else if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     try {
