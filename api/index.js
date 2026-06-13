@@ -52,11 +52,23 @@ if (serviceAccount) {
         console.log(`[Diagnostic] Contains actual newlines: ${pk.includes('\n')}`);
         console.log(`[Diagnostic] Contains literal '\\n' text: ${pk.includes('\\n')}`);
         
-        // Final cleanup helper to force format
+        // Bulletproof cleaning helper
         let cleanKey = pk.trim();
-        if (cleanKey.startsWith('"') && cleanKey.endsWith('"')) {
-            cleanKey = cleanKey.slice(1, -1);
+        
+        // Remove trailing comma if copied from JSON file
+        if (cleanKey.endsWith(',')) {
+            cleanKey = cleanKey.slice(0, -1).trim();
         }
+        // Remove enclosing double quotes
+        if (cleanKey.startsWith('"') && cleanKey.endsWith('"')) {
+            cleanKey = cleanKey.slice(1, -1).trim();
+        }
+        // Remove enclosing single quotes
+        if (cleanKey.startsWith("'") && cleanKey.endsWith("'")) {
+            cleanKey = cleanKey.slice(1, -1).trim();
+        }
+        
+        // Replace escaped newlines with actual newlines
         cleanKey = cleanKey.replace(/\\n/g, '\n');
         
         // Ensure private key has normalized newlines and correct format
