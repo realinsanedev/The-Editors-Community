@@ -52,7 +52,7 @@ if (serviceAccount) {
         console.log(`[Diagnostic] Contains actual newlines: ${pk.includes('\n')}`);
         console.log(`[Diagnostic] Contains literal '\\n' text: ${pk.includes('\\n')}`);
         
-        // Bulletproof cleaning helper
+        // Bulletproof reconstruction of the private key PEM block
         let cleanKey = pk.trim();
         
         // Remove trailing comma if copied from JSON file
@@ -68,8 +68,23 @@ if (serviceAccount) {
             cleanKey = cleanKey.slice(1, -1).trim();
         }
         
-        // Replace escaped newlines with actual newlines
-        cleanKey = cleanKey.replace(/\\n/g, '\n');
+        const header = '-----BEGIN PRIVATE KEY-----';
+        const footer = '-----END PRIVATE KEY-----';
+        
+        if (cleanKey.includes(header) && cleanKey.includes(footer)) {
+            // Extract the raw base64 data by removing headers, spaces, tabs, and any newline representations
+            let base64Data = cleanKey
+                .replace(header, '')
+                .replace(footer, '')
+                .replace(/\\n/g, '')  // Remove escaped newlines
+                .replace(/\s+/g, ''); // Remove all raw spaces/newlines/tabs
+            
+            // Reconstruct the PEM block with correct newlines
+            cleanKey = `${header}\n${base64Data}\n${footer}`;
+        } else {
+            // Fallback replacement if headers aren't matchable
+            cleanKey = cleanKey.replace(/\\n/g, '\n');
+        }
         
         // Ensure private key has normalized newlines and correct format
         if (serviceAccount.privateKey) {
