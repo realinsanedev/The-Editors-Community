@@ -14,8 +14,8 @@ document.addEventListener('keydown', (e) => {
 
 let data = {};
 
-// Detect the API base URL: use the server API if available, otherwise load static files
-const API_BASE = 'http://localhost:3000';
+// Detect the API base URL dynamically: use localhost when testing locally, relative path in production
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : '';
 
 function updateSidebarVisibility() {
     const sections = document.querySelectorAll('.nav-section');
@@ -420,14 +420,14 @@ function updateAuthUI() {
         unauthSection.style.display = 'none';
         authSection.style.display = 'flex';
         document.getElementById('navUserName').textContent = currentUser.username;
-        document.getElementById('navProfilePic').src = currentUser.profilePic ? `${API_BASE}${currentUser.profilePic}` : 'https://api.dicebear.com/6.x/initials/svg?seed=' + currentUser.name;
+        document.getElementById('navProfilePic').src = currentUser.profilePic ? (currentUser.profilePic.startsWith('http') ? currentUser.profilePic : `${API_BASE}${currentUser.profilePic}`) : 'https://api.dicebear.com/6.x/initials/svg?seed=' + currentUser.name;
         
         // Populate profile form
         document.getElementById('profName').value = currentUser.name || '';
         document.getElementById('profUsername').value = currentUser.username || '';
         document.getElementById('profEmail').value = currentUser.email || '';
-        document.getElementById('profilePicPreview').src = currentUser.profilePic ? `${API_BASE}${currentUser.profilePic}` : 'https://api.dicebear.com/6.x/initials/svg?seed=' + currentUser.name;
-        document.getElementById('profileBannerPreview').src = currentUser.profileBanner ? `${API_BASE}${currentUser.profileBanner}` : '';
+        document.getElementById('profilePicPreview').src = currentUser.profilePic ? (currentUser.profilePic.startsWith('http') ? currentUser.profilePic : `${API_BASE}${currentUser.profilePic}`) : 'https://api.dicebear.com/6.x/initials/svg?seed=' + currentUser.name;
+        document.getElementById('profileBannerPreview').src = currentUser.profileBanner ? (currentUser.profileBanner.startsWith('http') ? currentUser.profileBanner : `${API_BASE}${currentUser.profileBanner}`) : '';
         document.getElementById('profBio').value = currentUser.bio || '';
         document.getElementById('profBioCount').textContent = (currentUser.bio || '').length;
     } else {
@@ -677,7 +677,7 @@ async function renderForumPost(postId) {
             </div>
             <h1 style="font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 16px;">${safeTitle}</h1>
             <div class="thread-content">${safeContent}</div>
-            ${post.imageUrl ? `<img src="${API_BASE + post.imageUrl}" class="thread-image">` : ''}
+            ${post.imageUrl ? `<img src="${post.imageUrl.startsWith('http') ? post.imageUrl : API_BASE + post.imageUrl}" class="thread-image">` : ''}
         </div>
         
         <div class="replies-section">
@@ -696,7 +696,7 @@ async function renderForumPost(postId) {
                         <div class="forum-date">${rDate}</div>
                     </div>
                     <div class="reply-text">${rContent}</div>
-                    ${reply.imageUrl ? `<img src="${API_BASE + reply.imageUrl}" class="thread-image" style="max-width: 300px;">` : ''}
+                    ${reply.imageUrl ? `<img src="${reply.imageUrl.startsWith('http') ? reply.imageUrl : API_BASE + reply.imageUrl}" class="thread-image" style="max-width: 300px;">` : ''}
                 </div>
             </div>
         `;

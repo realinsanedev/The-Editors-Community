@@ -1,2 +1,4 @@
 node_modules/
 uploads/
+firebase-service-account.json
+.env
