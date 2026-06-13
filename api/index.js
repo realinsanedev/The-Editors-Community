@@ -75,6 +75,11 @@ app.use((req, res, next) => {
     next();
 });
 
+// Route to serve main homepage
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'index.html'));
+});
+
 // Route to serve admin panel
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin.html'));
