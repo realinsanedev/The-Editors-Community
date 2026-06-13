@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editors Community</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Editors Community</h2>
+            </div>
+            <div class="sidebar-search">
+                <div class="search-box">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 6.5C10 8.433 8.433 10 6.5 10C4.567 10 3 8.433 3 6.5C3 4.567 4.567 3 6.5 3C8.433 3 10 4.567 10 6.5ZM9.30884 10.0159C8.53901 10.6318 7.56251 11 6.5 11C4.01472 11 2 8.98528 2 6.5C2 4.01472 4.01472 2 6.5 2C8.98528 2 11 4.01472 11 6.5C11 7.56251 10.6318 8.53901 10.0159 9.30884L12.8536 12.1464C13.0488 12.3417 13.0488 12.6583 12.8536 12.8536C12.6583 13.0488 12.3417 13.0488 12.1464 12.8536L9.30884 10.0159Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                    <input type="text" placeholder="Search...">
+                    <span class="shortcut">⌘K</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <h3>Start Here</h3>
+                    <a href="#introduction" class="nav-link" data-path="introduction">Introduction</a>
+                </div>
+                
+                <div class="nav-section">
+                    <h3>Softwares</h3>
+                    <a href="#creative-cloud" class="nav-link" data-path="creative-cloud">Creative Cloud</a>
+                    <a href="#windows-softwares" class="nav-link" data-path="windows-softwares">Windows-Softwares</a>
+                    <a href="#mac-softwares" class="nav-link" data-path="mac-softwares">Mac-Softwares</a>
+                </div>
+
+                <div class="nav-section">
+                    <h3>Plugins</h3>
+                    <a href="#windows-plug-ins" class="nav-link" data-path="windows-plug-ins">Windows plug-ins</a>
+                    <a href="#mac-plug-ins" class="nav-link" data-path="mac-plug-ins">Mac plug-ins</a>
+                    <a href="#blender-addons" class="nav-link" data-path="blender-addons">Blender addons</a>
+                </div>
+
+                <div class="nav-section">
+                    <h3>Useful Websites</h3>
+                    <a href="#car-clips" class="nav-link" data-path="car-clips">Car clips</a>
+                    <a href="#vfx-pack" class="nav-link" data-path="vfx-pack">VFX Pack</a>
+                    <a href="#sfx-pack" class="nav-link" data-path="sfx-pack">SFX Pack</a>
+                </div>
+
+                <div class="nav-section">
+                    <h3>Frequently Asked Questions</h3>
+                    <a href="#general-questions" class="nav-link" data-path="general-questions">General Questions</a>
+                </div>
+            </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="background-blob"></div>
+            
+            <!-- Top Auth Navigation -->
+            <div class="top-auth-nav">
+                <div id="unauthSection" style="display: none;">
+                    <button class="btn btn-outline" onclick="openModal('loginModal')">Login</button>
+                    <button class="btn btn-primary" onclick="openModal('registerModal')">Sign Up</button>
+                </div>
+                <div id="authSection" style="display: none;" onclick="openModal('profileModal')">
+                    <img id="navProfilePic" src="" alt="Profile" class="nav-avatar">
+                    <span id="navUserName" class="nav-username"></span>
+                </div>
+            </div>
+
+            <div id="content-container">
+                <!-- Content injected via JS -->
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal">
+            <button class="close-btn" onclick="closeModals()">×</button>
+            <h3 style="margin-bottom: 24px; text-align: center; font-size: 24px;">Welcome Back</h3>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="loginUsername" class="form-control" placeholder="Enter username">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" class="form-control" placeholder="Enter password">
+            </div>
+            <div id="loginError" class="error-msg"></div>
+            <button class="btn btn-primary" style="width: 100%" onclick="handleLogin()">Login</button>
+            <p style="text-align: center; margin-top: 16px; font-size: 14px; color: #64748b;">
+                Don't have an account? <a href="#" style="color: #6622ba; font-weight: 600; text-decoration: none;" onclick="openModal('registerModal')">Sign Up</a>
+            </p>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="registerModal">
+        <div class="modal">
+            <button class="close-btn" onclick="closeModals()">×</button>
+            <h3 style="margin-bottom: 24px; text-align: center; font-size: 24px;">Create an Account</h3>
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="regName" class="form-control" placeholder="Enter full name">
+            </div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="regUsername" class="form-control" placeholder="Choose a username">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="regEmail" class="form-control" placeholder="Enter email">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="regPassword" class="form-control" placeholder="Create a password">
+            </div>
+            <div id="regError" class="error-msg"></div>
+            <button class="btn btn-primary" style="width: 100%" onclick="handleRegister()">Sign Up</button>
+            <p style="text-align: center; margin-top: 16px; font-size: 14px; color: #64748b;">
+                Already have an account? <a href="#" style="color: #6622ba; font-weight: 600; text-decoration: none;" onclick="openModal('loginModal')">Login</a>
+            </p>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="profileModal">
+        <div class="modal" style="max-width: 500px; padding: 0; overflow: hidden;">
+            <button class="close-btn" style="top: 12px; right: 12px; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.5); z-index: 10;" onclick="closeModals()">×</button>
+            <div class="profile-banner-container" onclick="document.getElementById('bannerUpload').click()">
+                <img id="profileBannerPreview" src="" alt="" style="width: 100%; height: 140px; object-fit: cover; background: #e2e8f0;">
+                <div class="upload-overlay"><span>Change Banner</span></div>
+                <input type="file" id="bannerUpload" style="display: none" accept="image/*" onchange="previewImage(this, 'profileBannerPreview')">
+            </div>
+            <div style="padding: 24px;">
+                <div class="profile-pic-container" onclick="document.getElementById('picUpload').click()" style="margin-top: -60px; margin-bottom: 20px; position: relative; width: 80px;">
+                    <img id="profilePicPreview" src="" alt="" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; background: #e2e8f0;">
+                    <div class="upload-overlay circle" style="border-radius: 50%;"><span>+</span></div>
+                    <input type="file" id="picUpload" style="display: none" accept="image/*" onchange="previewImage(this, 'profilePicPreview')">
+                </div>
+                
+                <h3 style="margin-bottom: 20px; font-size: 22px;">Edit Profile</h3>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="profName" class="form-control">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="profUsername" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="profEmail" class="form-control">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>New Password (Optional)</label>
+                    <input type="password" id="profPassword" class="form-control" placeholder="Leave blank to keep current">
+                </div>
+                <div id="profError" class="error-msg"></div>
+                <div style="display: flex; justify-content: space-between; margin-top: 32px; align-items: center;">
+                    <button class="btn btn-outline" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2);" onclick="handleLogout()">Logout</button>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-outline" onclick="closeModals()">Cancel</button>
+                        <button class="btn btn-primary" onclick="handleProfileUpdate()">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
