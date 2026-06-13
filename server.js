@@ -314,6 +314,12 @@ app.post('/api/data', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-});
+// Export for Vercel serverless
+module.exports = app;
+
+// Listen locally when not in Vercel
+if (process.env.VERCEL !== '1') {
+    app.listen(PORT, () => {
+        console.log(`Server running at http://localhost:${PORT}`);
+    });
+}
