@@ -76,15 +76,25 @@ function renderPage() {
 
     const container = document.getElementById('content-container');
 
+    // Trigger smooth transition animation
+    container.classList.remove('fade-in-content');
+    void container.offsetWidth; // trigger reflow
+    container.classList.add('fade-in-content');
+
     if (hash === 'forum') {
-        renderForumList();
+        renderForumList(true);
+        startForumPolling();
         return;
     }
     if (hash.startsWith('forum-post-')) {
         const postId = hash.split('forum-post-')[1];
-        renderForumPost(postId);
+        renderForumPost(postId, true);
+        startForumPolling();
         return;
     }
+
+    // Stop polling if we leave the forum sections
+    stopForumPolling();
 
     const pageData = data[hash];
 
@@ -610,6 +620,45 @@ document.addEventListener('DOMContentLoaded', () => {
    Forum Logic
    ============================================= */
 
+let pollInterval = null;
+let lastForumsJSON = '';
+
+function startForumPolling() {
+    if (pollInterval) clearInterval(pollInterval);
+    
+    pollInterval = setInterval(async () => {
+        const hash = window.location.hash.substring(1);
+        if (hash === 'forum' || hash.startsWith('forum-post-')) {
+            try {
+                const res = await fetch(API_BASE + '/api/forums');
+                const d = await res.json();
+                if (d.success) {
+                    const currentJSON = JSON.stringify(d.forums);
+                    // Only update and rerender if the data actually changed
+                    if (currentJSON !== lastForumsJSON) {
+                        lastForumsJSON = currentJSON;
+                        if (hash === 'forum') {
+                            await renderForumList(false); // Silent render
+                        } else {
+                            const postId = hash.split('forum-post-')[1];
+                            await renderForumPost(postId, false); // Silent render
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Error polling forums:", e);
+            }
+        }
+    }, 4000); // Poll every 4 seconds for a real-time feel
+}
+
+function stopForumPolling() {
+    if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+    }
+}
+
 async function fetchForums() {
     try {
         const res = await fetch(API_BASE + '/api/forums');
@@ -621,11 +670,14 @@ async function fetchForums() {
     }
 }
 
-async function renderForumList() {
+async function renderForumList(showLoading = true) {
     const container = document.getElementById('content-container');
-    container.innerHTML = `<div style="padding: 40px; text-align: center;">Loading forums...</div>`;
+    if (showLoading) {
+        container.innerHTML = `<div style="padding: 40px; text-align: center;">Loading forums...</div>`;
+    }
     
     const forums = await fetchForums();
+    lastForumsJSON = JSON.stringify(forums);
     
     let html = `
         <div class="forum-header">
@@ -658,7 +710,7 @@ async function renderForumList() {
                     <p class="forum-preview">${safeContent}</p>
                     <div class="forum-meta">
                         <span>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                             ${post.replies.length} replies
                         </span>
                     </div>
@@ -670,11 +722,19 @@ async function renderForumList() {
     container.innerHTML = html;
 }
 
-async function renderForumPost(postId) {
+async function renderForumPost(postId, showLoading = true) {
     const container = document.getElementById('content-container');
-    container.innerHTML = `<div style="padding: 40px; text-align: center;">Loading post...</div>`;
+    
+    // Store current reply textarea input value so it doesn't clear during real-time updates!
+    const replyArea = document.getElementById('replyContent');
+    const unsavedReply = replyArea ? replyArea.value : '';
+
+    if (showLoading) {
+        container.innerHTML = `<div style="padding: 40px; text-align: center;">Loading post...</div>`;
+    }
     
     const forums = await fetchForums();
+    lastForumsJSON = JSON.stringify(forums);
     const post = forums.find(f => f.id === postId);
     
     if (!post) {
@@ -746,6 +806,12 @@ async function renderForumPost(postId) {
     `;
 
     container.innerHTML = html;
+    
+    // Restore unsaved text to the reply form
+    const newReplyArea = document.getElementById('replyContent');
+    if (newReplyArea && unsavedReply) {
+        newReplyArea.value = unsavedReply;
+    }
 }
 
 async function handleForumPost() {
