@@ -11,6 +11,7 @@ const app = express();
 const PORT = 3000;
 const DATA_FILE = path.join(__dirname, 'data.json');
 const USERS_FILE = path.join(__dirname, 'users.json');
+const FORUMS_FILE = path.join(__dirname, 'forums.json');
 
 const ADMIN_USER = 'admin';
 const ADMIN_PASS = 'admin123';
@@ -27,6 +28,11 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir);
 }
 app.use('/uploads', express.static(uploadsDir));
+
+// Route to serve admin panel
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -49,9 +55,20 @@ function saveUsers(users) {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 4));
 }
 
+// Helper to read forums
+function getForums() {
+    if (!fs.existsSync(FORUMS_FILE)) return [];
+    return JSON.parse(fs.readFileSync(FORUMS_FILE, 'utf8') || '[]');
+}
+
+// Helper to save forums
+function saveForums(forums) {
+    fs.writeFileSync(FORUMS_FILE, JSON.stringify(forums, null, 4));
+}
+
 // --- USER ROUTES ---
 
-app.post('/api/users/register', async (req, res) => {
+app.post('/api/users/register', upload.fields([{ name: 'profilePic', maxCount: 1 }, { name: 'profileBanner', maxCount: 1 }]), async (req, res) => {
     const { username, email, password, name } = req.body;
     if (!username || !email || !password || !name) {
         return res.status(400).json({ success: false, message: 'All fields are required' });
@@ -61,20 +78,31 @@ app.post('/api/users/register', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Username or Email already exists' });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    let profilePic = '';
+    let profileBanner = '';
+    if (req.files && req.files['profilePic']) {
+        profilePic = '/uploads/' + req.files['profilePic'][0].filename;
+    }
+    if (req.files && req.files['profileBanner']) {
+        profileBanner = '/uploads/' + req.files['profileBanner'][0].filename;
+    }
+
     const newUser = {
         id: uuidv4(),
         username,
         email,
         name,
+        bio: '',
         password: hashedPassword,
-        profilePic: '',
-        profileBanner: ''
+        profilePic,
+        profileBanner
     };
     users.push(newUser);
     saveUsers(users);
     
     const token = jwt.sign({ id: newUser.id }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ success: true, token, user: { id: newUser.id, username, email, name, profilePic: '', profileBanner: '' } });
+    res.json({ success: true, token, user: { id: newUser.id, username, email, name, bio: newUser.bio, profilePic, profileBanner } });
 });
 
 app.post('/api/users/login', async (req, res) => {
@@ -87,7 +115,7 @@ app.post('/api/users/login', async (req, res) => {
     if (!isMatch) return res.status(400).json({ success: false, message: 'Invalid credentials' });
     
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ success: true, token, user: { id: user.id, username: user.username, email: user.email, name: user.name, profilePic: user.profilePic, profileBanner: user.profileBanner } });
+    res.json({ success: true, token, user: { id: user.id, username: user.username, email: user.email, name: user.name, bio: user.bio || '', profilePic: user.profilePic, profileBanner: user.profileBanner } });
 });
 
 const authenticateUser = (req, res, next) => {
@@ -105,11 +133,23 @@ const authenticateUser = (req, res, next) => {
     }
 };
 
+const authenticateUserOptional = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            req.userId = decoded.id;
+        } catch (err) {}
+    }
+    next();
+};
+
 app.get('/api/users/profile', authenticateUser, (req, res) => {
     const users = getUsers();
     const user = users.find(u => u.id === req.userId);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    res.json({ success: true, user: { id: user.id, username: user.username, email: user.email, name: user.name, profilePic: user.profilePic, profileBanner: user.profileBanner } });
+    res.json({ success: true, user: { id: user.id, username: user.username, email: user.email, name: user.name, bio: user.bio || '', profilePic: user.profilePic, profileBanner: user.profileBanner } });
 });
 
 app.post('/api/users/profile', authenticateUser, upload.fields([{ name: 'profilePic', maxCount: 1 }, { name: 'profileBanner', maxCount: 1 }]), async (req, res) => {
@@ -122,6 +162,7 @@ app.post('/api/users/profile', authenticateUser, upload.fields([{ name: 'profile
     if (req.body.name) user.name = req.body.name;
     if (req.body.email) user.email = req.body.email;
     if (req.body.username) user.username = req.body.username;
+    if (req.body.bio !== undefined) user.bio = req.body.bio;
     if (req.body.password) {
         user.password = await bcrypt.hash(req.body.password, 10);
     }
@@ -136,7 +177,101 @@ app.post('/api/users/profile', authenticateUser, upload.fields([{ name: 'profile
     users[userIndex] = user;
     saveUsers(users);
     
-    res.json({ success: true, message: 'Profile updated', user: { id: user.id, username: user.username, email: user.email, name: user.name, profilePic: user.profilePic, profileBanner: user.profileBanner } });
+    res.json({ success: true, message: 'Profile updated', user: { id: user.id, username: user.username, email: user.email, name: user.name, bio: user.bio || '', profilePic: user.profilePic, profileBanner: user.profileBanner } });
+});
+
+// --- FORUM ROUTES ---
+
+app.get('/api/forums', (req, res) => {
+    const forums = getForums();
+    // Sort posts by newest first
+    forums.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    res.json({ success: true, forums });
+});
+
+app.post('/api/forums', authenticateUserOptional, upload.single('image'), (req, res) => {
+    const { title, content } = req.body;
+    if (!title || !content) return res.status(400).json({ success: false, message: 'Title and content are required' });
+
+    let authorId = null;
+    let authorName = 'Anonymous';
+    let authorAvatar = 'https://api.dicebear.com/6.x/initials/svg?seed=Anon';
+
+    if (req.userId) {
+        const users = getUsers();
+        const user = users.find(u => u.id === req.userId);
+        if (user) {
+            authorId = user.id;
+            authorName = user.username;
+            authorAvatar = user.profilePic || 'https://api.dicebear.com/6.x/initials/svg?seed=' + user.name;
+        }
+    }
+
+    let imageUrl = '';
+    if (req.file) {
+        imageUrl = '/uploads/' + req.file.filename;
+    }
+
+    const forums = getForums();
+    const newPost = {
+        id: uuidv4(),
+        authorId,
+        authorName,
+        authorAvatar,
+        title,
+        content,
+        imageUrl,
+        createdAt: new Date().toISOString(),
+        replies: []
+    };
+
+    forums.push(newPost);
+    saveForums(forums);
+
+    res.json({ success: true, post: newPost });
+});
+
+app.post('/api/forums/:id/reply', authenticateUserOptional, upload.single('image'), (req, res) => {
+    const { content } = req.body;
+    if (!content) return res.status(400).json({ success: false, message: 'Content is required' });
+
+    const forums = getForums();
+    const postIndex = forums.findIndex(f => f.id === req.params.id);
+    if (postIndex === -1) return res.status(404).json({ success: false, message: 'Post not found' });
+
+    let authorId = null;
+    let authorName = 'Anonymous';
+    let authorAvatar = 'https://api.dicebear.com/6.x/initials/svg?seed=Anon';
+
+    if (req.userId) {
+        const users = getUsers();
+        const user = users.find(u => u.id === req.userId);
+        if (user) {
+            authorId = user.id;
+            authorName = user.username;
+            authorAvatar = user.profilePic || 'https://api.dicebear.com/6.x/initials/svg?seed=' + user.name;
+        }
+    }
+
+    let imageUrl = '';
+    if (req.file) {
+        imageUrl = '/uploads/' + req.file.filename;
+    }
+
+    const newReply = {
+        id: uuidv4(),
+        authorId,
+        authorName,
+        authorAvatar,
+        content,
+        imageUrl,
+        createdAt: new Date().toISOString()
+    };
+
+    forums[postIndex].replies.push(newReply);
+    saveForums(forums);
+
+    res.json({ success: true, reply: newReply });
 });
 
 // --- ADMIN ROUTES ---

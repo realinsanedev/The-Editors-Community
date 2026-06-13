@@ -1,7 +1,43 @@
+// Ctrl+K: Intercept IMMEDIATELY with capture to prevent browser search bar
+document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        const searchInput = document.querySelector('.search-box input');
+        if (searchInput) {
+            searchInput.focus();
+            searchInput.select();
+        }
+    }
+}, true); // capture phase = runs before browser default
+
 let data = {};
 
 // Detect the API base URL: use the server API if available, otherwise load static files
-const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+const API_BASE = 'http://localhost:3000';
+
+function updateSidebarVisibility() {
+    const sections = document.querySelectorAll('.nav-section');
+    sections.forEach(section => {
+        const links = section.querySelectorAll('.nav-link');
+        let visibleLinksCount = 0;
+        links.forEach(link => {
+            const path = link.getAttribute('data-path');
+            if (path && path !== 'introduction' && path !== 'forum' && !data[path]) {
+                link.style.display = 'none';
+            } else {
+                link.style.display = 'block';
+                visibleLinksCount++;
+            }
+        });
+        if (visibleLinksCount === 0) {
+            section.style.display = 'none';
+        } else {
+            section.style.display = 'block';
+        }
+    });
+}
 
 async function init() {
     try {
@@ -19,6 +55,7 @@ async function init() {
         }
         if (!response.ok) throw new Error('Could not load data');
         data = await response.json();
+        updateSidebarVisibility();
         setupSearch();
         renderPage();
         await checkAuthStatus();
@@ -38,7 +75,25 @@ function renderPage() {
     if (hash === 'search') return;
 
     const container = document.getElementById('content-container');
+
+    if (hash === 'forum') {
+        renderForumList();
+        return;
+    }
+    if (hash.startsWith('forum-post-')) {
+        const postId = hash.split('forum-post-')[1];
+        renderForumPost(postId);
+        return;
+    }
+
     const pageData = data[hash];
+
+    // Toggle centered layout for intro page
+    if (hash === 'introduction') {
+        container.classList.add('intro-centered');
+    } else {
+        container.classList.remove('intro-centered');
+    }
 
     // Update active nav link
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -125,13 +180,14 @@ function renderPage() {
 
 function setupSearch() {
     const searchInput = document.querySelector('.search-box input');
+    const searchBox = document.querySelector('.search-box');
     
-    // Ctrl/Cmd + K shortcut
-    document.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-            e.preventDefault();
-            searchInput.focus();
-        }
+    // Focus/blur visual feedback
+    searchInput.addEventListener('focus', () => {
+        searchBox.classList.add('focused');
+    });
+    searchInput.addEventListener('blur', () => {
+        searchBox.classList.remove('focused');
     });
 
     // Search input handler
@@ -151,32 +207,179 @@ function setupSearch() {
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
 
         let resultsHtml = `<div class="page-breadcrumbs">Search</div><h1 class="page-title">Results for "${query}"</h1>`;
-        let found = false;
+        
+        let sectionsMatched = '';
+        let linksMatched = '';
+        const seenUrls = new Set();
 
-        // Extremely basic search: searching through the raw HTML content text
         for (const [key, section] of Object.entries(data)) {
             if (key === 'introduction') continue;
             
+            // 1. Search in title
             const titleMatches = section.title && section.title.toLowerCase().includes(query);
-            const contentMatches = section.content && section.content.toLowerCase().includes(query);
+            
+            let matchedLinks = [];
 
-            if (titleMatches || contentMatches) {
-                found = true;
-                resultsHtml += `
-                    <div style="margin-bottom: 20px; padding: 20px; background: white; border-radius: 12px; border: 1px solid #e5e7eb;">
-                        <h3 style="margin-bottom: 10px; color: var(--red-brand);"><a href="#${key}" style="color: inherit; text-decoration: none;">${section.title}</a></h3>
-                        <p style="font-size: 14px; color: #666;">Matched in section: ${section.breadcrumb}</p>
-                        <a href="#${key}" style="display: inline-block; margin-top: 10px; color: #000; font-weight: 600; text-decoration: none; border-bottom: 1px solid #000;">View Section</a>
+            // 2. Search in structured softwareGroups
+            if (section.softwareGroups) {
+                section.softwareGroups.forEach(group => {
+                    const groupTitleMatches = group.title && group.title.toLowerCase().includes(query);
+                    if (group.links) {
+                        group.links.forEach(link => {
+                            if (groupTitleMatches || (link.label && link.label.toLowerCase().includes(query))) {
+                                matchedLinks.push({
+                                    group: group.title || 'Software',
+                                    label: link.label,
+                                    url: link.url,
+                                    breadcrumb: section.breadcrumb || 'Link'
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+
+            // 3. Search in structured downloadLinks
+            if (section.downloadLinks) {
+                section.downloadLinks.forEach(link => {
+                    if ((link.label && link.label.toLowerCase().includes(query)) ||
+                        (link.quality && link.quality.toLowerCase().includes(query))) {
+                        matchedLinks.push({
+                            group: 'Download',
+                            label: link.label,
+                            url: link.url,
+                            breadcrumb: section.breadcrumb || 'Download'
+                        });
+                    }
+                });
+            }
+
+            // 4. Search in raw HTML content
+            let contentTextMatches = false;
+            if (section.content) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = section.content;
+                
+                if (tempDiv.textContent.toLowerCase().includes(query)) {
+                    contentTextMatches = true;
+                }
+
+                // Find specific links
+                const aTags = tempDiv.querySelectorAll('a');
+                aTags.forEach(a => {
+                    const href = a.getAttribute('href');
+                    // Skip discord links and empty links for direct matches unless explicitly searched for Discord
+                    if (href && href !== '#' && !href.includes('discord.com/invite')) {
+                        if (a.textContent.toLowerCase().includes(query)) {
+                            let groupTitle = 'Resource';
+                            const groupDiv = a.closest('.software-group');
+                            if (groupDiv) {
+                                const h3 = groupDiv.querySelector('h3, .software-group-title');
+                                if (h3) groupTitle = h3.textContent;
+                            }
+                            matchedLinks.push({
+                                group: groupTitle,
+                                label: a.textContent,
+                                url: href,
+                                breadcrumb: section.breadcrumb || 'Resource'
+                            });
+                        }
+                    }
+                });
+                
+                // Find matching groups
+                const h3Tags = tempDiv.querySelectorAll('.software-group-title, .software-group h3');
+                h3Tags.forEach(h3 => {
+                    if (h3.textContent.toLowerCase().includes(query)) {
+                        const groupDiv = h3.closest('.software-group');
+                        if (groupDiv) {
+                            const linksInGroup = groupDiv.querySelectorAll('a');
+                            linksInGroup.forEach(a => {
+                                const href = a.getAttribute('href');
+                                if (href && href !== '#' && !href.includes('discord.com/invite')) {
+                                    matchedLinks.push({
+                                        group: h3.textContent,
+                                        label: a.textContent,
+                                        url: href,
+                                        breadcrumb: section.breadcrumb || 'Resource'
+                                    });
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+
+            // Render matched links for this section
+            matchedLinks.forEach(link => {
+                if (link.url && !seenUrls.has(link.url)) {
+                    seenUrls.add(link.url);
+                    const safeLabel = link.label ? link.label.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Link';
+                    const safeGroup = link.group ? link.group.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+                    
+                    linksMatched += `
+                        <a href="${link.url}" target="_blank" class="search-result-card link-card hover-lift" style="display: block; margin-bottom: 16px; padding: 20px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; text-decoration: none; color: inherit; transition: all 0.2s;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">${link.breadcrumb} &bull; ${safeGroup}</div>
+                                    <h4 style="font-size: 16px; font-weight: 600; color: #111; margin: 0;">${safeLabel}</h4>
+                                </div>
+                                <div class="icon-wrap" style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #e0e7ff; border-radius: 50%; color: #4338ca; transition: background 0.2s;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                </div>
+                            </div>
+                        </a>
+                    `;
+                }
+            });
+
+            // If the section title matched, or content matched (but maybe no specific link was extracted)
+            if (titleMatches || contentTextMatches) {
+                sectionsMatched += `
+                    <div class="search-result-card" style="margin-bottom: 16px; padding: 20px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; transition: all 0.2s;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Section &bull; ${section.breadcrumb || 'General'}</div>
+                                <h3 style="margin-bottom: 8px; font-size: 18px; margin-top: 0;"><a href="#${key}" style="color: #111; text-decoration: none;">${section.title || key}</a></h3>
+                                <a href="#${key}" style="display: inline-block; font-size: 14px; font-weight: 600; color: #4338ca; text-decoration: none;">View Section &rarr;</a>
+                            </div>
+                        </div>
                     </div>
                 `;
             }
         }
 
-        if (!found) {
-            resultsHtml += `<p>No results found for your query.</p>`;
+        if (sectionsMatched !== '' || linksMatched !== '') {
+            if (linksMatched !== '') {
+                resultsHtml += `<h3 style="margin: 24px 0 16px 0; font-size: 16px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Direct Downloads</h3>`;
+                resultsHtml += `<div class="search-results-links">` + linksMatched + `</div>`;
+            }
+            if (sectionsMatched !== '') {
+                resultsHtml += `<h3 style="margin: 24px 0 16px 0; font-size: 16px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Related Sections</h3>`;
+                resultsHtml += `<div class="search-results-sections">` + sectionsMatched + `</div>`;
+            }
+        } else {
+            resultsHtml += `
+                <div style="text-align: center; padding: 60px 20px;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 16px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <h3 style="font-size: 18px; color: #475569; margin-bottom: 8px; margin-top: 0;">No results found</h3>
+                    <p style="color: #94a3b8; margin: 0;">We couldn't find anything matching "${query}". Try adjusting your search.</p>
+                </div>
+            `;
         }
 
-        container.innerHTML = resultsHtml;
+        container.innerHTML = resultsHtml + `
+            <style>
+                .search-result-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.06) !important;
+                    border-color: #cbd5e1 !important;
+                }
+                .link-card:hover .icon-wrap {
+                    background: #c7d2fe !important;
+                }
+            </style>
+        `;
     });
 }
 
@@ -225,6 +428,8 @@ function updateAuthUI() {
         document.getElementById('profEmail').value = currentUser.email || '';
         document.getElementById('profilePicPreview').src = currentUser.profilePic ? `${API_BASE}${currentUser.profilePic}` : 'https://api.dicebear.com/6.x/initials/svg?seed=' + currentUser.name;
         document.getElementById('profileBannerPreview').src = currentUser.profileBanner ? `${API_BASE}${currentUser.profileBanner}` : '';
+        document.getElementById('profBio').value = currentUser.bio || '';
+        document.getElementById('profBioCount').textContent = (currentUser.bio || '').length;
     } else {
         unauthSection.style.display = 'block';
         authSection.style.display = 'none';
@@ -276,12 +481,22 @@ async function handleRegister() {
     const u = document.getElementById('regUsername').value;
     const e = document.getElementById('regEmail').value;
     const p = document.getElementById('regPassword').value;
+    const picFile = document.getElementById('regPicUpload').files[0];
+    const bannerFile = document.getElementById('regBannerUpload').files[0];
     const err = document.getElementById('regError');
+    
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('username', u);
+    formData.append('email', e);
+    formData.append('password', p);
+    if (picFile) formData.append('profilePic', picFile);
+    if (bannerFile) formData.append('profileBanner', bannerFile);
+
     try {
         const res = await fetch(API_BASE + '/api/users/register', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username: u, email: e, password: p, name})
+            body: formData
         });
         const data = await res.json();
         if (data.success) {
@@ -294,7 +509,7 @@ async function handleRegister() {
             err.style.display = 'block';
         }
     } catch(e) {
-        err.textContent = 'Network error';
+        err.textContent = 'Network error: Make sure the backend server is running.';
         err.style.display = 'block';
     }
 }
@@ -313,6 +528,7 @@ async function handleProfileUpdate() {
     formData.append('name', name);
     formData.append('username', u);
     formData.append('email', e);
+    formData.append('bio', document.getElementById('profBio').value);
     if (p) formData.append('password', p);
     if (picFile) formData.append('profilePic', picFile);
     if (bannerFile) formData.append('profileBanner', bannerFile);
@@ -353,5 +569,246 @@ function previewImage(input, previewId) {
             document.getElementById(previewId).src = e.target.result;
         }
         reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Bio character counter
+document.addEventListener('DOMContentLoaded', () => {
+    const bioField = document.getElementById('profBio');
+    const bioCount = document.getElementById('profBioCount');
+    if (bioField && bioCount) {
+        bioField.addEventListener('input', () => {
+            bioCount.textContent = bioField.value.length;
+            bioCount.parentElement.classList.toggle('near-limit', bioField.value.length >= 140);
+        });
+    }
+});
+
+/* =============================================
+   Forum Logic
+   ============================================= */
+
+async function fetchForums() {
+    try {
+        const res = await fetch(API_BASE + '/api/forums');
+        const d = await res.json();
+        return d.success ? d.forums : [];
+    } catch (e) {
+        console.error(e);
+        return [];
+    }
+}
+
+async function renderForumList() {
+    const container = document.getElementById('content-container');
+    container.innerHTML = `<div style="padding: 40px; text-align: center;">Loading forums...</div>`;
+    
+    const forums = await fetchForums();
+    
+    let html = `
+        <div class="forum-header">
+            <div>
+                <h1 class="page-title">Community Help Forum</h1>
+                <p style="color: #64748b;">Ask questions, share tips, and help other editors.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openModal('forumPostModal')">Create Post</button>
+        </div>
+    `;
+
+    if (forums.length === 0) {
+        html += `<div style="text-align: center; padding: 40px; background: #f8fafc; border-radius: 12px; color: #64748b;">No posts yet. Be the first to ask a question!</div>`;
+    } else {
+        forums.forEach(post => {
+            const dateStr = new Date(post.createdAt).toLocaleDateString();
+            const safeTitle = post.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const safeContent = post.content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            
+            html += `
+                <div class="forum-post-card" onclick="window.location.hash = 'forum-post-${post.id}'">
+                    <div class="forum-post-header">
+                        <img src="${post.authorAvatar.startsWith('http') ? post.authorAvatar : API_BASE + post.authorAvatar}" class="forum-avatar">
+                        <div>
+                            <div class="forum-author">${post.authorName}</div>
+                            <div class="forum-date">${dateStr}</div>
+                        </div>
+                    </div>
+                    <h3 class="forum-title">${safeTitle}</h3>
+                    <p class="forum-preview">${safeContent}</p>
+                    <div class="forum-meta">
+                        <span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            ${post.replies.length} replies
+                        </span>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    container.innerHTML = html;
+}
+
+async function renderForumPost(postId) {
+    const container = document.getElementById('content-container');
+    container.innerHTML = `<div style="padding: 40px; text-align: center;">Loading post...</div>`;
+    
+    const forums = await fetchForums();
+    const post = forums.find(f => f.id === postId);
+    
+    if (!post) {
+        container.innerHTML = `<h1>Post not found</h1><a href="#forum" class="btn btn-outline" style="margin-top: 20px;">Back to Forum</a>`;
+        return;
+    }
+
+    const dateStr = new Date(post.createdAt).toLocaleString();
+    const safeTitle = post.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const safeContent = post.content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    let html = `
+        <a href="#forum" style="color: #64748b; text-decoration: none; display: inline-block; margin-bottom: 24px;">&larr; Back to Forum</a>
+        
+        <div class="thread-original-post">
+            <div class="forum-post-header">
+                <img src="${post.authorAvatar.startsWith('http') ? post.authorAvatar : API_BASE + post.authorAvatar}" class="forum-avatar">
+                <div>
+                    <div class="forum-author">${post.authorName}</div>
+                    <div class="forum-date">${dateStr}</div>
+                </div>
+            </div>
+            <h1 style="font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 16px;">${safeTitle}</h1>
+            <div class="thread-content">${safeContent}</div>
+            ${post.imageUrl ? `<img src="${API_BASE + post.imageUrl}" class="thread-image">` : ''}
+        </div>
+        
+        <div class="replies-section">
+            <h3 style="margin-bottom: 24px; font-size: 20px;">${post.replies.length} Replies</h3>
+    `;
+
+    post.replies.forEach(reply => {
+        const rDate = new Date(reply.createdAt).toLocaleString();
+        const rContent = reply.content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        html += `
+            <div class="reply-bubble">
+                <img src="${reply.authorAvatar.startsWith('http') ? reply.authorAvatar : API_BASE + reply.authorAvatar}" class="forum-avatar">
+                <div class="reply-content-box">
+                    <div class="reply-header">
+                        <div class="forum-author">${reply.authorName}</div>
+                        <div class="forum-date">${rDate}</div>
+                    </div>
+                    <div class="reply-text">${rContent}</div>
+                    ${reply.imageUrl ? `<img src="${API_BASE + reply.imageUrl}" class="thread-image" style="max-width: 300px;">` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    html += `
+        </div>
+        
+        <div class="reply-form">
+            <h3 style="margin-bottom: 16px; font-size: 18px;">Post a Reply</h3>
+            <textarea id="replyContent" class="form-control" rows="4" placeholder="Write your reply... (You can post as a guest!)" style="margin-bottom: 16px; resize: vertical; min-height: 80px;"></textarea>
+            
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label>Attach Image (Optional)</label>
+                <div style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 16px; text-align: center; cursor: pointer; background: #f8fafc;" id="replyUploadBox" onclick="document.getElementById('replyImage').click()">
+                    <div style="font-size: 14px; color: #64748b; font-weight: 500;">Click to upload screenshot</div>
+                    <img id="replyImagePreview" src="" style="max-width: 100%; max-height: 150px; display: none; margin-top: 16px; border-radius: 8px;">
+                </div>
+                <input type="file" id="replyImage" style="display: none" accept="image/*" onchange="previewImage(this, 'replyImagePreview', 'replyUploadBox')">
+            </div>
+
+            <div id="replyError" class="error-msg"></div>
+            <button class="btn btn-primary" onclick="handleForumReply('${post.id}')">Submit Reply</button>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+async function handleForumPost() {
+    const title = document.getElementById('forumPostTitle').value.trim();
+    const content = document.getElementById('forumPostContent').value.trim();
+    const image = document.getElementById('forumPostImage').files[0];
+    const err = document.getElementById('forumPostError');
+
+    if (!title || !content) {
+        err.textContent = "Title and description are required.";
+        err.style.display = 'block';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('content', content);
+    if (image) formData.append('image', image);
+
+    const token = localStorage.getItem('userToken');
+    const headers = {};
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+        const res = await fetch(API_BASE + '/api/forums', {
+            method: 'POST',
+            headers,
+            body: formData
+        });
+        const d = await res.json();
+        if (d.success) {
+            closeModals();
+            document.getElementById('forumPostTitle').value = '';
+            document.getElementById('forumPostContent').value = '';
+            document.getElementById('forumPostImage').value = '';
+            document.getElementById('forumPostImagePreview').style.display = 'none';
+            renderForumList();
+        } else {
+            err.textContent = d.message;
+            err.style.display = 'block';
+        }
+    } catch (e) {
+        err.textContent = "Network error while posting.";
+        err.style.display = 'block';
+    }
+}
+
+async function handleForumReply(postId) {
+    const content = document.getElementById('replyContent').value.trim();
+    const image = document.getElementById('replyImage').files[0];
+    const err = document.getElementById('replyError');
+
+    if (!content) {
+        err.textContent = "Reply content is required.";
+        err.style.display = 'block';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('content', content);
+    if (image) formData.append('image', image);
+
+    const token = localStorage.getItem('userToken');
+    const headers = {};
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+        const res = await fetch(API_BASE + '/api/forums/' + postId + '/reply', {
+            method: 'POST',
+            headers,
+            body: formData
+        });
+        const d = await res.json();
+        if (d.success) {
+            renderForumPost(postId);
+        } else {
+            err.textContent = d.message;
+            err.style.display = 'block';
+        }
+    } catch (e) {
+        err.textContent = "Network error while replying.";
+        err.style.display = 'block';
     }
 }

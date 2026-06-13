@@ -1,1 +1,22 @@
-[]
+[
+    {
+        "id": "1be8fbed-278b-494f-bb43-60e9817f38d7",
+        "username": "realinsanedev",
+        "email": "nameisbunnyyyy@gmail.com",
+        "name": "Insane Dev",
+        "bio": "",
+        "password": "$2b$10$I1UV51RU41eSaD.wpOxshuTrYucG1COvIuY7x8mQYZmROCqOG/jSi",
+        "profilePic": "/uploads/4d52a009-20d2-4813-9edb-9af512f9ee46.jpg",
+        "profileBanner": "/uploads/e7752c85-9b5f-41dc-9905-cd59f5af2e28.jpg"
+    },
+    {
+        "id": "be23326b-bdec-47cf-a6c2-bcdeddd8824b",
+        "username": "insane.scp",
+        "email": "insanevfx18@gmail.com",
+        "name": "Insane Editzz",
+        "bio": "",
+        "password": "$2b$10$u16XltoItLkLkD6yv6y11e3dFCDJEeC.xSCTFLFOyBcDy8eiBMLSa",
+        "profilePic": "/uploads/099ee884-b97f-48b3-90f1-8e56fb102d7e.jpg",
+        "profileBanner": "/uploads/0afb6c9e-d1f1-40a1-9142-651f237ba106.jpg"
+    }
+]

@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
     <div id="app">
@@ -20,14 +20,14 @@
                 <div class="search-box">
                     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 6.5C10 8.433 8.433 10 6.5 10C4.567 10 3 8.433 3 6.5C3 4.567 4.567 3 6.5 3C8.433 3 10 4.567 10 6.5ZM9.30884 10.0159C8.53901 10.6318 7.56251 11 6.5 11C4.01472 11 2 8.98528 2 6.5C2 4.01472 4.01472 2 6.5 2C8.98528 2 11 4.01472 11 6.5C11 7.56251 10.6318 8.53901 10.0159 9.30884L12.8536 12.1464C13.0488 12.3417 13.0488 12.6583 12.8536 12.8536C12.6583 13.0488 12.3417 13.0488 12.1464 12.8536L9.30884 10.0159Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
                     <input type="text" placeholder="Search...">
-                    <span class="shortcut">⌘K</span>
+                    <span class="shortcut">Ctrl+K</span>
                 </div>
             </div>
             
             <nav class="sidebar-nav">
                 <div class="nav-section">
                     <h3>Start Here</h3>
-                    <a href="#introduction" class="nav-link" data-path="introduction">Introduction</a>
+                    <a href="#introduction" class="nav-link" data-path="introduction">Dashboard</a>
                 </div>
                 
                 <div class="nav-section">
@@ -54,6 +54,12 @@
                 <div class="nav-section">
                     <h3>Frequently Asked Questions</h3>
                     <a href="#general-questions" class="nav-link" data-path="general-questions">General Questions</a>
+                    <a href="#forum" class="nav-link" data-path="forum">Help Forum</a>
+                </div>
+                
+                <div style="margin-top: 40px; font-size: 12px; color: #64748b; line-height: 1.6;">
+                    <p style="margin: 0 0 4px 0;">&copy; 2026 Editors Community. All rights reserved.</p>
+                    <p style="margin: 0;">Made with <span style="color: #ef4444;">&hearts;</span> by <strong style="color: #0f172a;">Insane</strong></p>
                 </div>
             </nav>
         </aside>
@@ -83,64 +89,150 @@
 
     <!-- Modals -->
     <div class="modal-overlay" id="loginModal">
-        <div class="modal">
-            <button class="close-btn" onclick="closeModals()">×</button>
-            <h3 style="margin-bottom: 24px; text-align: center; font-size: 24px;">Welcome Back</h3>
+        <div class="modal auth-modal">
+            <button class="close-btn" onclick="closeModals()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div class="auth-modal-header">
+                <div class="auth-icon-wrap">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <h3 class="auth-title">Welcome back</h3>
+                <p class="auth-subtitle">Sign in to your account to continue</p>
+            </div>
             <div class="form-group">
                 <label>Username</label>
-                <input type="text" id="loginUsername" class="form-control" placeholder="Enter username">
+                <div class="input-icon-wrap">
+                    <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <input type="text" id="loginUsername" class="form-control has-icon" placeholder="Enter your username" autocomplete="username">
+                </div>
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" id="loginPassword" class="form-control" placeholder="Enter password">
+                <div class="input-icon-wrap">
+                    <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <input type="password" id="loginPassword" class="form-control has-icon has-toggle" placeholder="Enter your password" autocomplete="current-password">
+                    <button class="pw-toggle" type="button" onclick="togglePassword('loginPassword', this)" tabindex="-1">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
             </div>
             <div id="loginError" class="error-msg"></div>
-            <button class="btn btn-primary" style="width: 100%" onclick="handleLogin()">Login</button>
-            <p style="text-align: center; margin-top: 16px; font-size: 14px; color: #64748b;">
-                Don't have an account? <a href="#" style="color: #6622ba; font-weight: 600; text-decoration: none;" onclick="openModal('registerModal')">Sign Up</a>
-            </p>
+            <button class="btn btn-auth-primary" id="loginBtn" onclick="handleLogin()">
+                <span>Sign In</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+            <div class="auth-divider"><span>or</span></div>
+            <p class="auth-switch">Don't have an account? <a href="#" onclick="openModal('registerModal')">Create one</a></p>
         </div>
     </div>
 
     <div class="modal-overlay" id="registerModal">
-        <div class="modal">
-            <button class="close-btn" onclick="closeModals()">×</button>
-            <h3 style="margin-bottom: 24px; text-align: center; font-size: 24px;">Create an Account</h3>
-            <div class="form-group">
-                <label>Full Name</label>
-                <input type="text" id="regName" class="form-control" placeholder="Enter full name">
+        <div class="modal auth-modal">
+            <button class="close-btn" onclick="closeModals()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <!-- Banner upload -->
+            <div class="reg-banner-container" onclick="document.getElementById('regBannerUpload').click()">
+                <img id="regBannerPreview" src="" alt="" class="reg-banner-img">
+                <div class="banner-placeholder">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>Add Banner</span>
+                </div>
+                <div class="upload-overlay"><span>Change Banner</span></div>
+                <input type="file" id="regBannerUpload" style="display: none" accept="image/*" onchange="previewImage(this, 'regBannerPreview')">
             </div>
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="regUsername" class="form-control" placeholder="Choose a username">
+            <!-- Profile pic upload -->
+            <div class="reg-avatar-area">
+                <div class="reg-avatar-container" onclick="document.getElementById('regPicUpload').click()">
+                    <img id="regPicPreview" src="" alt="" class="reg-avatar-img">
+                    <div class="reg-avatar-placeholder">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="camera-icon">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                        <span class="upload-text">Upload</span>
+                    </div>
+                    <div class="upload-overlay circle"><span>+</span></div>
+                    <input type="file" id="regPicUpload" style="display: none" accept="image/*" onchange="previewImage(this, 'regPicPreview')">
+                </div>
+                <div class="reg-header-text">
+                    <h3 class="auth-title">Join the community</h3>
+                    <p class="auth-subtitle">Create your free account in seconds</p>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <div class="input-icon-wrap">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <input type="text" id="regName" class="form-control has-icon" placeholder="Full name">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <div class="input-icon-wrap">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>
+                        <input type="text" id="regUsername" class="form-control has-icon" placeholder="Username">
+                    </div>
+                </div>
             </div>
             <div class="form-group">
                 <label>Email</label>
-                <input type="email" id="regEmail" class="form-control" placeholder="Enter email">
+                <div class="input-icon-wrap">
+                    <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    <input type="email" id="regEmail" class="form-control has-icon" placeholder="your@email.com" autocomplete="email">
+                </div>
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" id="regPassword" class="form-control" placeholder="Create a password">
+                <div class="input-icon-wrap">
+                    <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <input type="password" id="regPassword" class="form-control has-icon has-toggle" placeholder="Create a strong password" autocomplete="new-password">
+                    <button class="pw-toggle" type="button" onclick="togglePassword('regPassword', this)" tabindex="-1">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+                <div class="pw-strength-bar" id="regPwStrength"><span></span></div>
             </div>
             <div id="regError" class="error-msg"></div>
-            <button class="btn btn-primary" style="width: 100%" onclick="handleRegister()">Sign Up</button>
-            <p style="text-align: center; margin-top: 16px; font-size: 14px; color: #64748b;">
-                Already have an account? <a href="#" style="color: #6622ba; font-weight: 600; text-decoration: none;" onclick="openModal('loginModal')">Login</a>
-            </p>
+            <button class="btn btn-auth-primary" id="registerBtn" onclick="handleRegister()">
+                <span>Create Account</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+            <div class="auth-divider"><span>or</span></div>
+            <p class="auth-switch">Already have an account? <a href="#" onclick="openModal('loginModal')">Sign in</a></p>
         </div>
     </div>
 
     <div class="modal-overlay" id="profileModal">
-        <div class="modal" style="max-width: 500px; padding: 0; overflow: hidden;">
+        <div class="modal" style="max-width: 500px; padding: 0; max-height: 90vh; overflow-x: hidden; overflow-y: auto;">
             <button class="close-btn" style="top: 12px; right: 12px; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.5); z-index: 10;" onclick="closeModals()">×</button>
             <div class="profile-banner-container" onclick="document.getElementById('bannerUpload').click()">
                 <img id="profileBannerPreview" src="" alt="" style="width: 100%; height: 140px; object-fit: cover; background: #e2e8f0;">
+                <div class="banner-placeholder">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>Add Banner</span>
+                </div>
                 <div class="upload-overlay"><span>Change Banner</span></div>
                 <input type="file" id="bannerUpload" style="display: none" accept="image/*" onchange="previewImage(this, 'profileBannerPreview')">
             </div>
             <div style="padding: 24px;">
-                <div class="profile-pic-container" onclick="document.getElementById('picUpload').click()" style="margin-top: -60px; margin-bottom: 20px; position: relative; width: 80px;">
+                <div class="profile-pic-container" onclick="document.getElementById('picUpload').click()" style="margin-top: -60px; margin-bottom: 20px; position: relative; width: 80px; height: 80px;">
                     <img id="profilePicPreview" src="" alt="" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; background: #e2e8f0;">
+                    <div class="reg-avatar-placeholder" style="width: 80px; height: 80px; border: 3px solid #fff;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="camera-icon">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                        <span class="upload-text">Upload</span>
+                    </div>
                     <div class="upload-overlay circle" style="border-radius: 50%;"><span>+</span></div>
                     <input type="file" id="picUpload" style="display: none" accept="image/*" onchange="previewImage(this, 'profilePicPreview')">
                 </div>
@@ -161,6 +253,14 @@
                     </div>
                 </div>
                 <div class="form-group">
+                    <label>Bio</label>
+                    <div class="input-icon-wrap">
+                        <svg class="input-icon" style="top: 14px;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        <textarea id="profBio" class="form-control has-icon" placeholder="Tell the community a bit about yourself..." rows="3" maxlength="160" style="resize: vertical; min-height: 44px;"></textarea>
+                    </div>
+                    <div class="bio-char-count"><span id="profBioCount">0</span>/160</div>
+                </div>
+                <div class="form-group">
                     <label>New Password (Optional)</label>
                     <input type="password" id="profPassword" class="form-control" placeholder="Leave blank to keep current">
                 </div>
@@ -176,6 +276,40 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- Forum Post Modal -->
+    <div class="modal-overlay" id="forumPostModal">
+        <div class="modal auth-modal" style="max-width: 500px;">
+            <button class="close-btn" onclick="closeModals()">×</button>
+            <div class="auth-modal-header" style="padding-bottom: 20px;">
+                <h2 style="font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 8px; letter-spacing: -0.02em;">Ask the Community</h2>
+                <p style="color: #64748b; font-size: 15px; margin: 0;">Need help? Post your editing question here.</p>
+            </div>
+            <div style="padding: 32px;">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="forumPostTitle" class="form-control" placeholder="E.g., How to do a seamless zoom in Premiere?">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="forumPostContent" class="form-control" placeholder="Describe what you are trying to do..." rows="4" style="resize: vertical; min-height: 80px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Attach Image (Optional)</label>
+                    <div style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s ease; background: #f8fafc;" id="forumUploadBox" onclick="document.getElementById('forumPostImage').click()">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 12px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <div style="font-size: 14px; color: #64748b; font-weight: 500;">Click to upload screenshot</div>
+                        <img id="forumPostImagePreview" src="" style="max-width: 100%; max-height: 150px; display: none; margin-top: 16px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                    </div>
+                    <input type="file" id="forumPostImage" style="display: none" accept="image/*" onchange="previewImage(this, 'forumPostImagePreview', 'forumUploadBox')">
+                </div>
+                <div id="forumPostError" class="error-msg"></div>
+                <button class="btn btn-auth-primary" style="margin-top: 24px;" id="forumSubmitBtn" onclick="handleForumPost()">
+                    <span>Post to Forum</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=2"></script>
 </body>
 </html>

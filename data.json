@@ -1,13 +1,6 @@
 {
     "introduction": {
-        "content": "<div class=\"intro-logo\">\n                <h1>EDITORS</h1>\n            </div>\n            <p class=\"intro-subtitle\">Where others see raw footage, we see the story waiting to be told — Editors don't just cut clips, we craft impact.</p>\n            \n            <h2 class=\"category-section-title\">Explore by categories</h2>\n            <div class=\"categories-grid\">\n                <a href=\"#windows-plug-ins\" class=\"category-card\">\n                    <h3>Plugins (Mac & Windows)</h3>\n                    <p>Find essential plugins for editing on both Mac and Windows platforms.</p>\n                </a>\n                <a href=\"#windows-softwares\" class=\"category-card\">\n                    <h3>Software (Mac & Windows)</h3>\n                    <p>Discover powerful software tools available for Mac and Windows users.</p>\n                </a>\n                <a href=\"#car-clips\" class=\"category-card\">\n                    <h3>Useful Websites</h3>\n                    <p>Access high-quality websites and resources for your projects.</p>\n                </a>\n                <a href=\"#creative-cloud\" class=\"category-card\">\n                    <h3>Creative Cloud</h3>\n                    <p>Get official Adobe creative cloud sub for cheaper price</p>\n                </a>\n            </div>"
-    },
-    "creative-cloud": {
-        "title": "Creative Cloud",
-        "breadcrumb": "Softwares",
-        "content": "<div class=\"software-group\">\n                <p>⚠️ <strong>Important Notice</strong><br>\n                Cracked or modified Adobe software versions are no longer working reliably due to recent security updates and license checks from Adobe.<br>\n                For stable, secure, and uninterrupted access, the best option is to get the official Adobe Creative Cloud at discounted prices below 👇</p>\n            </div>\n            \n            <div class=\"software-group\">\n                <h3 class=\"software-group-title\">✨ Features & Benefits</h3>\n                <ul class=\"software-list\">\n                    <li>✅ Full Adobe Apps – Photoshop, Illustrator, Premiere Pro, After Effects, Acrobat Pro & more</li>\n                    <li>✅ Photoshop Beta + Generative Fill included</li>\n                    <li>✅ 100 GB Creative Cloud Storage</li>\n                    <li>✅ Works on Windows & Mac</li>\n                    <li>✅ Use on up to 2 devices with your private account</li>\n                    <li>✅ Complete Warranty</li>\n                </ul>\n            </div>\n\n            <div class=\"software-group\">\n                <h3 class=\"software-group-title\">📌 Important Note</h3>\n                <ul class=\"software-list\">\n                    <li>🔹 Official Adobe Creative Cloud Account</li>\n                    <li>🔹 Subscription will be activated on your own email</li>\n                    <li>🔹 You’ll receive access directly from the official Adobe email for redemption</li>\n                </ul>\n",
-        "downloadLinks": [],
-        "softwareGroups": []
+        "content": "<div class=\"intro-logo\">\n                      the <h1>EDITORS COMMUNITY.</h1>\n            </div>\n            <p class=\"intro-subtitle\">      Where ors see raw footage, we see the story waiting to be told — Editors don't just cut clips, we craft impact.</p>\n            \n            <h2 class=\"category-section-title\">Explore by categories</h2>\n            <div class=\"categories-grid\">\n                <a href=\"#windows-plug-ins\" class=\"category-card\">\n                    <h3>Plugins (Mac & Windows)</h3>\n                    <p>Find essential plugins for editing on both Mac and Windows platforms.</p>\n                </a>\n                <a href=\"#windows-softwares\" class=\"category-card\">\n                    <h3>Software (Mac & Windows)</h3>\n                    <p>Discover powerful software tools available for Mac and Windows users.</p>\n                </a>\n                <a href=\"#car-clips\" class=\"category-card\">\n                    <h3>Useful Websites</h3>\n                    <p>Access high-quality websites and resources for your projects.</p>\n                </a>\n                <a href=\"#creative-cloud\" class=\"category-card\">\n                    <h3>Creative Cloud</h3>\n                    <p>Get official Adobe creative cloud sub for cheaper price</p>\n                </a>\n            </div>"
     },
     "windows-softwares": {
         "title": "Windows-Softwares",
@@ -49,16 +42,6 @@
     },
     "car-clips": {
         "title": "Car clips",
-        "breadcrumb": "Useful Websites",
-        "content": "<p>(No content or links found on this page)</p>"
-    },
-    "vfx-pack": {
-        "title": "VFX Pack",
-        "breadcrumb": "Useful Websites",
-        "content": "<p>Uploading…………………….</p>"
-    },
-    "sfx-pack": {
-        "title": "SFX Pack",
         "breadcrumb": "Useful Websites",
         "content": "<p>(No content or links found on this page)</p>"
     },
