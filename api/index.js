@@ -111,6 +111,8 @@ if (serviceAccount) {
 }
 
 // Configure Cloudinary
+console.log(`[Diagnostic] Cloudinary env vars: URL=${!!process.env.CLOUDINARY_URL}, NAME=${!!process.env.CLOUDINARY_CLOUD_NAME}, KEY=${!!process.env.CLOUDINARY_API_KEY}, SECRET=${!!process.env.CLOUDINARY_API_SECRET}`);
+
 if (process.env.CLOUDINARY_URL) {
     cloudinary.config();
 } else {
