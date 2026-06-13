@@ -71,15 +71,21 @@ if (serviceAccount) {
         const header = '-----BEGIN PRIVATE KEY-----';
         const footer = '-----END PRIVATE KEY-----';
         
-        if (cleanKey.includes(header) && cleanKey.includes(footer)) {
+        const headerIndex = cleanKey.indexOf(header);
+        const footerIndex = cleanKey.indexOf(footer);
+        
+        if (headerIndex !== -1 && footerIndex !== -1) {
+            // Extract the precise key block, discarding any leading/trailing junk (like escaped quotes or commas)
+            const keyBlock = cleanKey.slice(headerIndex, footerIndex + footer.length);
+            
             // Extract the raw base64 data by removing headers, spaces, tabs, and any newline representations
-            let base64Data = cleanKey
+            const base64Data = keyBlock
                 .replace(header, '')
                 .replace(footer, '')
                 .replace(/\\n/g, '')  // Remove escaped newlines
                 .replace(/\s+/g, ''); // Remove all raw spaces/newlines/tabs
             
-            // Reconstruct the PEM block with correct newlines
+            // Reconstruct the PEM block with standard newlines
             cleanKey = `${header}\n${base64Data}\n${footer}`;
         } else {
             // Fallback replacement if headers aren't matchable
