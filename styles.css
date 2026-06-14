@@ -9,6 +9,25 @@
     --red-brand: #6622ba;
 }
 
+/* Sleek custom scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(102, 34, 186, 0.15);
+    border-radius: 99px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.3s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(102, 34, 186, 0.35);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -124,30 +143,42 @@ body {
     padding: 8px 12px;
     margin-bottom: 2px;
     border-radius: 6px;
-    transition: color 0.15s, background-color 0.15s;
+    transition: color 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+                background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
 }
 
 .nav-link:hover {
     color: var(--text-primary);
     background-color: #e5e7eb;
+    transform: translateX(4px);
 }
 
 .nav-link.active {
     color: var(--text-primary);
-    font-weight: 500;
+    font-weight: 600;
+    background-color: rgba(102, 34, 186, 0.06);
 }
 
-.nav-link.active::before {
+.nav-link::before {
     content: '';
     position: absolute;
     left: -20px;
     top: 50%;
-    transform: translateY(-50%);
+    transform: translateY(-50%) scaleY(0);
     height: 16px;
     width: 3px;
     background-color: var(--nav-active-border);
     border-radius: 0 2px 2px 0;
+    opacity: 0;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                opacity 0.2s ease;
+}
+
+.nav-link.active::before {
+    transform: translateY(-50%) scaleY(1);
+    opacity: 1;
 }
 
 /* Main Content Styling */
@@ -268,20 +299,26 @@ body {
 }
 
 .category-card {
-    background-color: rgba(255, 255, 255, 0.4);
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    background-color: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(102, 34, 186, 0.08);
     border-radius: 12px;
     padding: 32px;
     text-decoration: none;
     color: inherit;
-    transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
-    backdrop-filter: blur(10px);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    will-change: transform, box-shadow;
 }
 
 .category-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
-    background-color: rgba(255, 255, 255, 0.7);
+    transform: translateY(-4px);
+    box-shadow: 0 16px 36px rgba(102, 34, 186, 0.08);
+    background-color: rgba(255, 255, 255, 0.75);
+    border-color: rgba(102, 34, 186, 0.2);
 }
 
 .category-card h3 {
@@ -485,21 +522,28 @@ body {
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(8px);
+    background: rgba(15, 23, 42, 0);
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 2000;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s;
+    transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                backdrop-filter 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                -webkit-backdrop-filter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     padding: 20px;
 }
 
 .modal-overlay.active {
     opacity: 1;
     pointer-events: auto;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .modal {
@@ -508,9 +552,11 @@ body {
     width: 100%;
     max-width: 400px;
     padding: 40px 32px;
-    transform: translateY(20px);
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 24px 50px -12px rgba(102, 34, 186, 0.12);
     position: relative;
     max-height: 90vh;
     overflow-y: auto;
@@ -518,7 +564,8 @@ body {
 }
 
 .modal-overlay.active .modal {
-    transform: translateY(0);
+    opacity: 1;
+    transform: translateY(0) scale(1);
 }
 
 .close-btn {
@@ -1634,26 +1681,45 @@ body {
 .search-palette-overlay {
     align-items: flex-start !important;
     padding-top: 12vh !important;
-    background: rgba(15, 23, 42, 0.45) !important;
+    background: rgba(15, 23, 42, 0) !important;
+    backdrop-filter: blur(0px) !important;
+    -webkit-backdrop-filter: blur(0px) !important;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
+                background-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                backdrop-filter 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                -webkit-backdrop-filter 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.search-palette-overlay.active {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    background: rgba(15, 23, 42, 0.35) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
 }
 
 .search-palette {
     width: 100%;
     max-width: 650px;
     background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(102, 34, 186, 0.15);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(102, 34, 186, 0.12);
     border-radius: 16px;
-    box-shadow: 0 24px 50px -12px rgba(102, 34, 186, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.6);
+    box-shadow: 0 24px 50px -12px rgba(102, 34, 186, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.5);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transform: translateY(-20px) scale(0.98);
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0;
+    transform: translateY(-16px) scale(0.97);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
+                opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .search-palette-overlay.active .search-palette {
+    opacity: 1;
     transform: translateY(0) scale(1);
 }
 
@@ -1854,4 +1920,92 @@ body {
 .item-highlighted {
     animation: highlight-pulse 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     border-radius: 8px;
+}
+
+/* =============================================
+   Advanced Tactile Feedback & Micro-interactions
+   ============================================= */
+
+/* Global interactive transition overrides */
+.btn,
+.btn-primary,
+.btn-outline,
+.btn-auth-primary,
+.category-card,
+.dlink-card,
+.forum-post-card,
+.search-palette-item,
+.nav-link {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+                box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+                background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* physical tactile press animation */
+.btn:active,
+.btn-primary:active,
+.btn-outline:active,
+.btn-auth-primary:active,
+.category-card:active,
+.dlink-card:active,
+.forum-post-card:active,
+.search-palette-item:active {
+    transform: scale(0.97) translateY(0) !important;
+    box-shadow: 0 2px 8px rgba(102, 34, 186, 0.02) !important;
+}
+
+/* Download Link Cards */
+.dlink-card {
+    display: block;
+    background: rgba(255, 255, 255, 0.45) !important;
+    border: 1.5px solid rgba(102, 34, 186, 0.08) !important;
+    border-radius: 12px;
+    padding: 24px;
+    text-decoration: none;
+    color: inherit;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    will-change: transform, box-shadow;
+}
+
+.dlink-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 16px 36px rgba(102, 34, 186, 0.08) !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-color: rgba(102, 34, 186, 0.25) !important;
+}
+
+.dlink-card h4 {
+    transition: color 0.2s ease;
+}
+
+.dlink-card:hover h4 {
+    color: var(--red-brand) !important;
+}
+
+/* Staggered Content Entry Animations */
+.stagger-in > * {
+    opacity: 0;
+    transform: translateY(12px);
+    animation: staggerFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.stagger-in > *:nth-child(1) { animation-delay: 0.03s; }
+.stagger-in > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger-in > *:nth-child(3) { animation-delay: 0.09s; }
+.stagger-in > *:nth-child(4) { animation-delay: 0.12s; }
+.stagger-in > *:nth-child(5) { animation-delay: 0.15s; }
+.stagger-in > *:nth-child(6) { animation-delay: 0.18s; }
+.stagger-in > *:nth-child(7) { animation-delay: 0.21s; }
+.stagger-in > *:nth-child(8) { animation-delay: 0.24s; }
+.stagger-in > *:nth-child(9) { animation-delay: 0.27s; }
+.stagger-in > *:nth-child(10) { animation-delay: 0.30s; }
+
+@keyframes staggerFadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

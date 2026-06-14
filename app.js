@@ -133,7 +133,7 @@ function renderPage() {
                 const safeCat = group.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 html += `<h3 class="software-group-title">${safeCat}</h3>`;
             }
-            html += `<ul class="software-list">`;
+            html += `<ul class="software-list stagger-in">`;
             if (group.links) {
                 group.links.forEach(link => {
                     const sLabel = link.label ? link.label.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Link';
@@ -152,7 +152,7 @@ function renderPage() {
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                         Download Links
                     </h3>
-                    <div class="download-links-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">`;
+                    <div class="download-links-grid stagger-in" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">`;
         
         pageData.downloadLinks.forEach(link => {
             // Encode the values for safety
@@ -160,9 +160,9 @@ function renderPage() {
             const sQuality = link.quality ? link.quality.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
             const sSize = link.size ? link.size.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
             const sUrl = link.url ? link.url.replace(/"/g, '&quot;') : '#';
-
+ 
             html += `
-                <a href="${sUrl}" target="_blank" class="dlink-card hover-lift" style="display: block; background: transparent; border: 1.5px solid #111; border-radius: 12px; padding: 24px; text-decoration: none; color: inherit; transition: all 0.2s;">
+                <a href="${sUrl}" target="_blank" class="dlink-card">
                     <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 24px; color: #111; font-family: 'Space Grotesk', sans-serif;">${sLabel}</h4>
                     <div style="display: flex; justify-content: space-between; font-size: 13px; color: #64748b;">
                         ${sQuality ? `<span style="background: #f1f5f9; padding: 6px 12px; border-radius: 8px; font-weight: 600;">${sQuality}</span>` : '<span></span>'}
@@ -173,14 +173,7 @@ function renderPage() {
         });
         
         html += `   </div>
-                </div>
-                <style>
-                    .dlink-card:hover {
-                        transform: translateY(-2px);
-                        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-                        background: white !important;
-                    }
-                </style>`;
+                </div>`;
     }
     
     container.innerHTML = html;
@@ -799,6 +792,7 @@ async function renderForumList(showLoading = true) {
     if (forums.length === 0) {
         html += `<div style="text-align: center; padding: 40px; background: #f8fafc; border-radius: 12px; color: #64748b;">No posts yet. Be the first to ask a question!</div>`;
     } else {
+        html += `<div class="forum-list stagger-in">`;
         forums.forEach(post => {
             const dateStr = new Date(post.createdAt).toLocaleDateString();
             const safeTitle = post.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -824,6 +818,7 @@ async function renderForumList(showLoading = true) {
                 </div>
             `;
         });
+        html += `</div>`;
     }
 
     container.innerHTML = html;
@@ -871,6 +866,7 @@ async function renderForumPost(postId, showLoading = true) {
         
         <div class="replies-section">
             <h3 style="margin-bottom: 24px; font-size: 20px;">${post.replies.length} Replies</h3>
+            <div class="replies-list stagger-in">
     `;
 
     post.replies.forEach(reply => {
@@ -892,6 +888,7 @@ async function renderForumPost(postId, showLoading = true) {
     });
 
     html += `
+            </div>
         </div>
         
         <div class="reply-form">

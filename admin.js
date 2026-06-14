@@ -359,7 +359,7 @@ function addSoftwareGroup(group = {}) {
     const container = document.getElementById('softwareGroupsContainer');
     const div = document.createElement('div');
     div.className = 'dlink-item sgroup-item';
-    div.style.background = 'rgba(0,0,0,0.3)';
+    div.style.background = 'rgba(255, 255, 255, 0.45)';
     
     const groupId = 'sg-' + Math.random().toString(36).substr(2, 9);
     div.id = groupId;
@@ -376,15 +376,15 @@ function addSoftwareGroup(group = {}) {
         <button type="button" class="remove-btn" onclick="this.parentElement.remove(); if(typeof updatePreview === 'function') updatePreview();">×</button>
         <div class="form-group" style="margin-bottom: 16px;">
             <label style="color: var(--accent);">CATEGORY TITLE (e.g. Adobe After Effects)</label>
-            <input type="text" class="form-control sg-title" style="border-color: rgba(225, 29, 72, 0.3); font-weight: bold;" placeholder="e.g. Adobe After Effects" value="${safeVal(group.title)}" oninput="if(typeof updatePreview === 'function') updatePreview()">
+            <input type="text" class="form-control sg-title" style="border-color: rgba(102, 34, 186, 0.15); font-weight: bold;" placeholder="e.g. Adobe After Effects" value="${safeVal(group.title)}" oninput="if(typeof updatePreview === 'function') updatePreview()">
             <div class="category-chips sg-chips"></div>
         </div>
         
-        <div class="sg-links-container" style="padding-left: 20px; border-left: 2px solid rgba(255,255,255,0.05); margin-bottom: 16px;">
+        <div class="sg-links-container" style="padding-left: 20px; border-left: 2px solid rgba(102, 34, 186, 0.15); margin-bottom: 16px;">
             <!-- Links for this group -->
         </div>
         
-        <button type="button" class="btn btn-outline" style="border-style: dashed; padding: 8px 16px; font-size: 12px; border-radius: 16px; color: #94a3b8;" onclick="addLinkToGroup('${groupId}')">
+        <button type="button" class="btn btn-outline" style="border-style: dashed; padding: 8px 16px; font-size: 12px; border-radius: 16px; color: var(--text-secondary);" onclick="addLinkToGroup('${groupId}')">
             + ADD LINK TO THIS CATEGORY
         </button>
     `;
@@ -429,8 +429,8 @@ function appendLinkToContainer(container, link = {}) {
     div.style.position = 'relative';
     div.style.marginBottom = '12px';
     div.style.padding = '12px';
-    div.style.background = 'rgba(255,255,255,0.02)';
-    div.style.border = '1px solid rgba(255,255,255,0.05)';
+    div.style.background = 'rgba(255, 255, 255, 0.3)';
+    div.style.border = '1.5px solid rgba(102, 34, 186, 0.08)';
     div.style.borderRadius = '8px';
     
     const safeVal = (str) => {
@@ -545,7 +545,7 @@ function updatePreview() {
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                         Download Links
                     </h3>
-                    <div class="download-links-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">`;
+                    <div class="download-links-grid stagger-in" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">`;
         
         downloadLinks.forEach(link => {
             const sLabel = link.label ? link.label.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Download';
@@ -554,7 +554,7 @@ function updatePreview() {
             const sUrl = link.url ? link.url.replace(/"/g, '&quot;') : '#';
 
             html += `
-                <a href="${sUrl}" target="_blank" class="dlink-card hover-lift" style="display: block; background: transparent; border: 1.5px solid #111; border-radius: 12px; padding: 24px; text-decoration: none; color: inherit; transition: all 0.2s;">
+                <a href="${sUrl}" target="_blank" class="dlink-card">
                     <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 24px; color: #111; font-family: 'Space Grotesk', sans-serif;">${sLabel}</h4>
                     <div style="display: flex; justify-content: space-between; font-size: 13px; color: #64748b;">
                         ${sQuality ? `<span style="background: #f1f5f9; padding: 6px 12px; border-radius: 8px; font-weight: 600;">${sQuality}</span>` : '<span></span>'}
@@ -565,14 +565,7 @@ function updatePreview() {
         });
         
         html += `   </div>
-                </div>
-                <style>
-                    .dlink-card:hover {
-                        transform: translateY(-2px);
-                        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-                        background: white !important;
-                    }
-                </style>`;
+                </div>`;
     }
 
     const iframeHtml = `
