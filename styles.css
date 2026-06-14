@@ -3711,3 +3711,39 @@ input[type="range"].form-control::-webkit-slider-thumb:hover {
     font-weight: 600;
     color: #1e293b;
 }
+
+/* ── Site Footer ── */
+.site-footer {
+    position: relative;
+    z-index: 1;
+    margin-top: 60px;
+    padding: 0 80px 40px 20px;
+}
+
+.site-footer-inner {
+    max-width: 800px;
+    border-top: 1px solid rgba(102, 34, 186, 0.10);
+    padding-top: 28px;
+}
+
+.site-footer p {
+    font-size: 11.5px;
+    line-height: 1.75;
+    color: var(--text-secondary);
+    font-weight: 400;
+    letter-spacing: 0.01em;
+}
+
+.site-footer-copy {
+    margin-top: 12px;
+    font-weight: 600 !important;
+    color: #9ca3af !important;
+    font-size: 11px !important;
+}
+
+@media (max-width: 768px) {
+    .site-footer {
+        padding: 0 20px 32px 20px;
+        margin-top: 40px;
+    }
+}
