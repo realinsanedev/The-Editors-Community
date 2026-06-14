@@ -1,6 +1,6 @@
 let data = {};
 let currentKey = null;
-// CodeMirror editor instance removed
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : '';
 
 
 async function init() {
@@ -11,7 +11,7 @@ async function init() {
     }
 
     try {
-        const response = await fetch('http://localhost:3000/api/data');
+        const response = await fetch(API_BASE + '/api/data');
         data = await response.json();
         
         document.getElementById('loginModal').classList.remove('active');
@@ -89,7 +89,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     const errorEl = document.getElementById('loginError');
     
     try {
-        const res = await fetch('http://localhost:3000/api/login', {
+        const res = await fetch(API_BASE + '/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: user, password: pass })
@@ -224,7 +224,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 async function saveData() {
     const token = localStorage.getItem('adminToken');
     try {
-        const res = await fetch('http://localhost:3000/api/data', {
+        const res = await fetch(API_BASE + '/api/data', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
