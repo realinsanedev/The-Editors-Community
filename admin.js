@@ -657,11 +657,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (copyBtn) {
             const password = copyBtn.getAttribute('data-password') || 'star';
             navigator.clipboard.writeText(password).then(() => {
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = 'Copied!';
+                const originalHTML = copyBtn.innerHTML;
+                copyBtn.innerHTML = `
+                    <span>Copied!</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                `;
                 copyBtn.classList.add('copied');
                 setTimeout(() => {
-                    copyBtn.textContent = originalText;
+                    copyBtn.innerHTML = originalHTML;
                     copyBtn.classList.remove('copied');
                 }, 1500);
             }).catch(err => {

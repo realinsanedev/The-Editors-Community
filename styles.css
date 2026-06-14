@@ -358,85 +358,99 @@ body {
 .password-banner {
     display: inline-flex;
     align-items: center;
-    gap: 12px;
-    background: linear-gradient(135deg, rgba(102, 34, 186, 0.08) 0%, rgba(102, 34, 186, 0.03) 100%);
-    border: 1.5px solid rgba(102, 34, 186, 0.18); /* Subtle purple border */
-    padding: 10px 24px;
+    gap: 14px;
+    background: linear-gradient(135deg, rgba(102, 34, 186, 0.05) 0%, rgba(102, 34, 186, 0.02) 100%);
+    border: 1.5px solid rgba(102, 34, 186, 0.16);
+    padding: 8px 18px;
     border-radius: 50px;
-    box-shadow: 0 8px 25px rgba(102, 34, 186, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px rgba(102, 34, 186, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     max-width: 95%;
     box-sizing: border-box;
-    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .password-banner:hover {
-    background: linear-gradient(135deg, rgba(102, 34, 186, 0.12) 0%, rgba(102, 34, 186, 0.05) 100%);
     border-color: rgba(102, 34, 186, 0.35);
-    box-shadow: 0 12px 30px rgba(102, 34, 186, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 34, 186, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transform: translateY(-2px) scale(1.02);
+}
+
+/* Rounded glowing background for key icon */
+.password-key-wrapper {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(102, 34, 186, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid rgba(102, 34, 186, 0.12);
+    transition: all 0.3s ease;
+}
+
+.password-banner:hover .password-key-wrapper {
+    background: rgba(102, 34, 186, 0.15);
+    border-color: rgba(102, 34, 186, 0.25);
+    transform: rotate(-15deg);
 }
 
 .password-key-icon {
-    color: #6622ba; /* Vibrant primary brand purple */
-    flex-shrink: 0;
+    color: #6622ba;
     display: flex;
     align-items: center;
+    justify-content: center;
     animation: pulse-glow 3s infinite ease-in-out;
 }
 
 .password-key-icon svg {
-    width: 18px !important;
-    height: 18px !important;
+    width: 16px !important;
+    height: 16px !important;
 }
 
 .password-banner-text {
-    color: #1a0b2e; /* Deep purple text for high contrast and readability */
-    font-size: 14.5px;
+    color: #1a0b2e;
+    font-size: 14px;
     font-weight: 600;
-    letter-spacing: 0.2px;
+    letter-spacing: 0.1px;
 }
 
 .password-copy-badge {
     position: relative;
     overflow: hidden;
     background: linear-gradient(135deg, #7c3aed 0%, #6622ba 100%);
-    border: 1px solid rgba(102, 34, 186, 0.3);
+    border: none;
     color: #ffffff;
-    padding: 6px 16px;
-    border-radius: 8px;
-    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 12.5px;
     font-weight: 700;
     font-family: 'Outfit', 'Inter', sans-serif;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     outline: none;
     user-select: none;
-    box-shadow: 0 4px 12px rgba(102, 34, 186, 0.15);
+    box-shadow: 0 4px 12px rgba(102, 34, 186, 0.2);
 }
 
-.password-copy-badge::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -50%;
-    width: 200%;
-    height: 100%;
-    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
-    transform: skewX(-25deg);
-    transition: 0.75s;
+.password-copy-badge svg {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
 }
 
 .password-copy-badge:hover {
     background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    border-color: rgba(102, 34, 186, 0.5);
     transform: scale(1.05);
-    box-shadow: 0 6px 16px rgba(102, 34, 186, 0.25);
+    box-shadow: 0 6px 16px rgba(102, 34, 186, 0.3);
 }
 
-.password-copy-badge:hover::after {
-    left: 125%;
+.password-copy-badge:hover svg {
+    transform: scale(1.15);
 }
 
 .password-copy-badge:active {
@@ -445,19 +459,22 @@ body {
 
 .password-copy-badge.copied {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-    border-color: #059669 !important;
-    color: #ffffff !important;
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
 }
 
 .password-banner-subtext {
-    font-size: 9.5px;
-    color: #6622ba; /* deep brand purple */
+    font-size: 9px;
+    color: rgba(102, 34, 186, 0.65);
     text-transform: uppercase;
     letter-spacing: 1.5px;
     margin-top: 8px;
     font-weight: 700;
-    opacity: 0.8;
+    transition: all 0.3s ease;
+}
+
+.password-banner-container:hover .password-banner-subtext {
+    color: #6622ba;
+    letter-spacing: 1.8px;
 }
 
 .software-pass-info {
@@ -473,20 +490,20 @@ body {
 /* Ensure responsiveness */
 @media (max-width: 640px) {
     .password-banner {
-        padding: 8px 16px;
+        padding: 6px 12px;
         border-radius: 30px;
         flex-direction: row;
         text-align: left;
-        gap: 10px;
+        gap: 8px;
     }
     
     .password-banner-text {
-        font-size: 12.5px;
+        font-size: 12px;
     }
     
     .password-copy-badge {
         padding: 4px 10px;
-        font-size: 11.5px;
+        font-size: 11px;
     }
 }
 
