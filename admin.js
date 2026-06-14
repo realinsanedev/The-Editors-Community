@@ -650,6 +650,25 @@ function initSortables() {
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('editTitle').addEventListener('input', updatePreview);
     document.getElementById('editBreadcrumb').addEventListener('input', updatePreview);
+
+    // Copy password handler for interactive banner in preview pane
+    document.addEventListener('click', (e) => {
+        const copyBtn = e.target.closest('.password-copy-badge');
+        if (copyBtn) {
+            const password = copyBtn.getAttribute('data-password') || 'star';
+            navigator.clipboard.writeText(password).then(() => {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.classList.remove('copied');
+                }, 1500);
+            }).catch(err => {
+                console.error('Failed to copy password:', err);
+            });
+        }
+    });
 });
 
 /* =============================================

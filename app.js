@@ -1723,10 +1723,26 @@ function stopNotifPolling() {
     closeNotifPanel();
 }
 
-// Close notif panel on outside click
+// Close notif panel on outside click & copy password handling
 document.addEventListener('click', (e) => {
     if (notifPanelOpen && !e.target.closest('#notifBellSection')) {
         closeNotifPanel();
+    }
+
+    const copyBtn = e.target.closest('.password-copy-badge');
+    if (copyBtn) {
+        const password = copyBtn.getAttribute('data-password') || 'star';
+        navigator.clipboard.writeText(password).then(() => {
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = 'Copied!';
+            copyBtn.classList.add('copied');
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+                copyBtn.classList.remove('copied');
+            }, 1500);
+        }).catch(err => {
+            console.error('Failed to copy password:', err);
+        });
     }
 });
 
