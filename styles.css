@@ -210,11 +210,12 @@ body {
 /* Introduction Page */
 .intro-logo {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    position: relative;
-    height: 120px;
-    margin-bottom: 20px;
+    height: auto;
+    margin-bottom: 40px;
+    text-align: center;
 }
 
 .intro-logo h1 {
@@ -223,14 +224,15 @@ body {
     color: var(--text-primary);
     font-style: italic;
     letter-spacing: -2px;
+    line-height: 0.9;
 }
 
 .intro-logo .cursive {
-    position: absolute;
     font-family: 'Brush Script MT', 'Comic Sans MS', cursive;
-    font-size: 100px;
+    font-size: 80px;
     color: #6622ba;
-    transform: rotate(-5deg) translate(80px, 10px);
+    transform: rotate(-5deg);
+    margin-bottom: -10px;
 }
 
 .intro-subtitle {
@@ -1271,4 +1273,346 @@ body {
     border-radius: 16px;
     padding: 24px;
     margin-top: 32px;
+}
+
+/* Mobile UI Header styling */
+.mobile-header {
+    display: none;
+}
+
+.sidebar-close-btn {
+    display: none;
+}
+
+/* =============================================
+   Mobile/Tablet Media Queries (max-width: 768px)
+   ============================================= */
+@media (max-width: 768px) {
+    /* Prevent body scrolling when menu is open */
+    body.sidebar-open {
+        overflow: hidden;
+    }
+
+    /* Top mobile header bar */
+    .mobile-header {
+        display: flex;
+        align-items: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 56px;
+        background-color: var(--sidebar-bg);
+        border-bottom: 1px solid var(--sidebar-border);
+        padding: 0 16px;
+        z-index: 100;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .menu-toggle-btn {
+        background: none;
+        border: none;
+        color: var(--text-primary);
+        cursor: pointer;
+        padding: 6px;
+        margin-right: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .menu-toggle-btn:hover {
+        background-color: rgba(0, 0, 0, 0.06);
+    }
+    
+    .menu-toggle-btn:active {
+        transform: scale(0.95);
+    }
+
+    .mobile-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.3px;
+    }
+
+    /* Transform sidebar to a slide-out drawer */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 280px;
+        background-color: #ffffff; /* pure white for clean drawer contrast */
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 200;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.12);
+        border-right: none;
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+    }
+
+    /* Sidebar Header on mobile */
+    .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        background-color: #ffffff;
+    }
+
+    .sidebar-close-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 6px;
+        transition: background-color 0.2s, color 0.2s;
+    }
+
+    .sidebar-close-btn:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+        color: var(--text-primary);
+    }
+
+    /* Sidebar search and nav adjustments */
+    .sidebar-search {
+        padding: 0 20px 16px;
+    }
+
+    .sidebar-nav {
+        padding: 0 20px 20px;
+    }
+
+    /* Sidebar Blur Overlay */
+    .sidebar-overlay {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(15, 23, 42, 0.3);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 190;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+
+    .sidebar-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* Move auth nav to align with mobile header */
+    .top-auth-nav {
+        position: fixed;
+        top: 10px;
+        right: 16px;
+        z-index: 101;
+    }
+
+    /* Adjust page margins & paddings */
+    #content-container {
+        padding: 76px 16px 40px 16px !important;
+        max-width: 100%;
+    }
+
+    #content-container.intro-centered {
+        padding-top: 84px !important;
+        align-items: stretch;
+    }
+
+    /* Hero section scaling */
+    .intro-logo {
+        height: auto;
+        margin-bottom: 16px;
+    }
+
+    .intro-logo h1 {
+        font-size: 48px !important;
+        line-height: 0.9;
+        letter-spacing: -1.5px;
+        white-space: normal !important;
+    }
+
+    .intro-logo .cursive {
+        font-size: 44px !important;
+        transform: rotate(-5deg) !important;
+        margin-bottom: -6px;
+    }
+
+    .intro-subtitle {
+        font-size: 13px;
+        line-height: 1.4;
+        margin-bottom: 24px;
+        padding: 0 8px;
+    }
+
+    /* Stack Grids */
+    .categories-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .category-card {
+        padding: 24px 20px;
+    }
+
+    .download-links-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+    }
+
+    .dlink-card {
+        padding: 18px !important;
+    }
+
+    /* Forums responsiveness */
+    .forum-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .forum-header button {
+        align-self: flex-start;
+        width: 100%;
+        padding: 12px;
+    }
+
+    .forum-post-card {
+        padding: 16px;
+        border-radius: 10px;
+    }
+
+    .forum-title {
+        font-size: 16px;
+    }
+
+    .thread-original-post {
+        padding: 20px;
+        border-radius: 12px;
+    }
+
+    .thread-original-post h1 {
+        font-size: 22px;
+    }
+
+    .replies-section {
+        margin-top: 24px;
+    }
+
+    .reply-bubble {
+        gap: 8px;
+    }
+
+    .reply-content-box {
+        padding: 14px;
+        border-radius: 10px;
+    }
+
+    .reply-form {
+        padding: 16px;
+        border-radius: 12px;
+    }
+}
+
+/* =============================================
+   Compact Smartphone Media Queries (max-width: 480px)
+   ============================================= */
+@media (max-width: 480px) {
+    /* Compact auth buttons */
+    .top-auth-nav .btn {
+        padding: 6px 12px;
+        font-size: 12px;
+        height: 34px;
+    }
+
+    #unauthSection button {
+        margin-left: 4px;
+    }
+
+    /* Compact logged-in avatar */
+    .nav-username {
+        display: none;
+    }
+
+    #authSection {
+        padding: 4px;
+        border-radius: 50%;
+        width: 38px;
+        height: 38px;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .nav-avatar {
+        width: 30px;
+        height: 30px;
+    }
+
+    /* Stack grid elements inside modals (e.g. register and profile fields) */
+    .modal div[style*="grid"],
+    .auth-modal div[style*="grid"] {
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
+    }
+
+    .modal {
+        padding: 28px 20px;
+        border-radius: 16px;
+    }
+
+    .auth-modal-header {
+        padding: 28px 20px 20px;
+    }
+
+    .auth-modal > .form-group,
+    .auth-modal > div[style*="grid"],
+    .auth-modal > .error-msg,
+    .auth-modal > .auth-divider,
+    .auth-modal > .auth-switch {
+        margin-left: 20px;
+        margin-right: 20px;
+    }
+
+    .reg-avatar-area {
+        padding: 0 20px;
+        margin-top: -30px;
+    }
+
+    .reg-avatar-container,
+    .reg-avatar-container .upload-overlay,
+    .reg-avatar-placeholder {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .reg-avatar-img {
+        width: 70px;
+        height: 70px;
+    }
+
+    #profileModal .modal {
+        max-width: 100% !important;
+        border-radius: 16px;
+    }
+
+    /* Typography scale */
+    .page-title {
+        font-size: 26px;
+        margin-bottom: 16px;
+    }
 }

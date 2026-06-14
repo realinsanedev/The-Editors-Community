@@ -1,6 +1,7 @@
 let data = {};
 let currentKey = null;
-let editor; // CodeMirror instance
+// CodeMirror editor instance removed
+
 
 async function init() {
     const token = localStorage.getItem('adminToken');
@@ -14,7 +15,6 @@ async function init() {
         data = await response.json();
         
         document.getElementById('loginModal').classList.remove('active');
-        initCodeMirror();
         setupSearch();
         renderCategoryList();
         populateCategoryChips();
@@ -99,8 +99,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
         if (json.success) {
             localStorage.setItem('adminToken', json.token);
             errorEl.style.display = 'none';
-            // Only init code mirror if it's not initialized yet
-            if (!editor) {
+            if (Object.keys(data).length === 0) {
                 init();
             } else {
                 document.getElementById('loginModal').classList.remove('active');
@@ -115,23 +114,8 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     }
 });
 
-function initCodeMirror() {
-    const textarea = document.getElementById('editContent');
-    editor = CodeMirror.fromTextArea(textarea, {
-        mode: 'htmlmixed',
-        theme: 'material-darker',
-        lineNumbers: true,
-        lineWrapping: true,
-        tabSize: 4,
-        indentUnit: 4
-    });
-    
-    // Update textarea when CodeMirror changes so we can easily save
-    editor.on('change', () => {
-        textarea.value = editor.getValue();
-        if (typeof updatePreview === 'function') updatePreview();
-    });
-}
+// initCodeMirror omitted
+
 
 function setupSearch() {
     const searchInput = document.getElementById('searchInput');
@@ -171,9 +155,6 @@ function loadEditor(key) {
     document.getElementById('editTitle').value = section.title || '';
     document.getElementById('editBreadcrumb').value = section.breadcrumb || '';
     
-    // Set CodeMirror value
-    editor.setValue(section.content || '');
-    
     // Load Download Links
     const dlContainer = document.getElementById('downloadLinksContainer');
     dlContainer.innerHTML = '';
@@ -197,8 +178,7 @@ function loadEditor(key) {
     }
     sgroups.forEach(group => addSoftwareGroup(group));
     
-    // Refresh CodeMirror because it might have been hidden
-    setTimeout(() => editor.refresh(), 10);
+    // Refresh editor omitted
     
     if (typeof initSortables === 'function') initSortables();
     if (typeof updatePreview === 'function') updatePreview();
@@ -232,7 +212,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     data[currentKey] = {
         title: document.getElementById('editTitle').value,
         breadcrumb: document.getElementById('editBreadcrumb').value,
-        content: editor.getValue(), // Get from CodeMirror
+        content: (data[currentKey] && data[currentKey].content) || '', // Safely preserve existing content
         downloadLinks: downloadLinks,
         softwareGroups: softwareGroups
     };
@@ -508,7 +488,7 @@ function updatePreview() {
 
     const title = document.getElementById('editTitle').value || 'Section Title';
     const breadcrumb = document.getElementById('editBreadcrumb').value || 'Category';
-    const content = editor ? editor.getValue() : '';
+    const content = data[currentKey] ? (data[currentKey].content || '') : '';
     
     const linkElements = document.querySelectorAll('#downloadLinksContainer .dlink-item');
     const downloadLinks = Array.from(linkElements).map(el => ({
