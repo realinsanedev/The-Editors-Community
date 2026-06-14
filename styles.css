@@ -2598,11 +2598,69 @@ body {
     background: #fafafa;
 }
 
+.preset-footer-left {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+}
+
 .preset-stats {
     display: flex;
     gap: 14px;
     font-size: 12px;
     color: var(--text-secondary);
+}
+
+.preset-rating {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.stars-row {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+.star-btn {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    color: #cbd5e1;
+    transition: color 0.15s ease, transform 0.1s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+}
+
+.star-btn:hover {
+    transform: scale(1.2);
+    color: #eab308;
+}
+
+.star-btn.filled {
+    color: #eab308;
+}
+
+.star-btn.user-rated {
+    color: #eab308;
+}
+
+.rating-info {
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    margin-left: 2px;
+}
+
+.rating-count-sm {
+    color: #94a3b8;
+    font-weight: 500;
 }
 
 .preset-stat-btn {
