@@ -16,8 +16,72 @@ let data = {};
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : '';
 
 function updateSidebarVisibility() {
+    // 1. Remove all previously added dynamic sections and links to avoid duplicates
+    document.querySelectorAll('.dynamic-nav-section').forEach(el => el.remove());
+    document.querySelectorAll('.dynamic-nav-link').forEach(el => el.remove());
+
+    // 2. Map existing section header text (lowercase) to their element
     const sections = document.querySelectorAll('.nav-section');
-    sections.forEach(section => {
+    const sectionMap = {};
+    sections.forEach(sec => {
+        const h3 = sec.querySelector('h3');
+        if (h3) {
+            const text = h3.textContent.trim().toLowerCase();
+            sectionMap[text] = sec;
+        }
+    });
+
+    // 3. Dynamically insert links for any sections in data that are not already hardcoded
+    Object.keys(data).forEach(key => {
+        if (key === 'introduction') return;
+
+        const existingLink = document.querySelector(`.nav-link[data-path="${key}"]`);
+        if (!existingLink) {
+            const sectionData = data[key];
+            if (sectionData && sectionData.breadcrumb) {
+                const breadcrumb = sectionData.breadcrumb.trim();
+                const breadcrumbLower = breadcrumb.toLowerCase();
+                let targetSection = sectionMap[breadcrumbLower];
+
+                // If the section doesn't exist, create it dynamically
+                if (!targetSection) {
+                    targetSection = document.createElement('div');
+                    targetSection.className = 'nav-section dynamic-nav-section';
+                    
+                    const h3 = document.createElement('h3');
+                    h3.textContent = breadcrumb;
+                    targetSection.appendChild(h3);
+
+                    // Find the sidebar navigation element
+                    const sidebarNav = document.querySelector('.sidebar-nav');
+                    if (sidebarNav) {
+                        // Find the copyright block/footer in the sidebar to insert before it
+                        const copyrightDiv = Array.from(sidebarNav.children).find(child => 
+                            child.tagName === 'DIV' && !child.classList.contains('nav-section')
+                        );
+                        if (copyrightDiv) {
+                            sidebarNav.insertBefore(targetSection, copyrightDiv);
+                        } else {
+                            sidebarNav.appendChild(targetSection);
+                        }
+                    }
+                    sectionMap[breadcrumbLower] = targetSection;
+                }
+
+                // Create and append the new nav-link
+                const a = document.createElement('a');
+                a.href = `#${key}`;
+                a.className = 'nav-link dynamic-nav-link';
+                a.setAttribute('data-path', key);
+                a.textContent = sectionData.title || key;
+                targetSection.appendChild(a);
+            }
+        }
+    });
+
+    // 4. Re-query all sections (including dynamic ones) and handle hide/show logic
+    const allSections = document.querySelectorAll('.nav-section');
+    allSections.forEach(section => {
         const links = section.querySelectorAll('.nav-link');
         let visibleLinksCount = 0;
         links.forEach(link => {
