@@ -119,9 +119,18 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
 
 function setupSearch() {
     const searchInput = document.getElementById('searchInput');
-    searchInput.addEventListener('input', (e) => {
-        renderCategoryList(e.target.value.toLowerCase());
-    });
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            renderCategoryList(e.target.value.toLowerCase());
+        });
+    }
+
+    const presetsSearchInput = document.getElementById('presetsSearchInput');
+    if (presetsSearchInput) {
+        presetsSearchInput.addEventListener('input', () => {
+            renderAdminPresetsTable();
+        });
+    }
 }
 
 function renderCategoryList(filterQuery = '') {
@@ -141,16 +150,44 @@ function renderCategoryList(filterQuery = '') {
         div.onclick = () => loadEditor(key);
         list.appendChild(div);
     });
+
+    // Add special presets manager item
+    const presetTitle = "✦ Manage Presets";
+    if (!filterQuery || presetTitle.toLowerCase().includes(filterQuery)) {
+        const div = document.createElement('div');
+        div.className = `category-item ${currentKey === '_presets' ? 'active' : ''}`;
+        div.textContent = presetTitle;
+        div.style.borderLeft = '3px solid var(--accent)';
+        div.style.background = currentKey === '_presets' ? 'rgba(102, 34, 186, 0.08)' : '';
+        div.onclick = () => loadEditor('_presets');
+        list.appendChild(div);
+    }
 }
 
 function loadEditor(key) {
     currentKey = key;
     renderCategoryList(document.getElementById('searchInput').value.toLowerCase());
 
-    const section = data[key];
     document.getElementById('emptyState').style.display = 'none';
+
+    if (key === '_presets') {
+        document.getElementById('editorForm').style.display = 'none';
+        document.getElementById('presetsManager').style.display = 'block';
+        
+        // Hide live preview panel if open
+        const grid = document.querySelector('.editor-grid');
+        if (grid && grid.classList.contains('split-mode')) {
+            togglePreview();
+        }
+        
+        loadAdminPresets();
+        return;
+    }
+
+    document.getElementById('presetsManager').style.display = 'none';
     document.getElementById('editorForm').style.display = 'block';
 
+    const section = data[key] || {};
     document.getElementById('editId').value = key;
     document.getElementById('editTitle').value = section.title || '';
     document.getElementById('editBreadcrumb').value = section.breadcrumb || '';
@@ -177,8 +214,6 @@ function loadEditor(key) {
         sgroups = Object.keys(grouped).map(cat => ({ title: cat, links: grouped[cat] }));
     }
     sgroups.forEach(group => addSoftwareGroup(group));
-    
-    // Refresh editor omitted
     
     if (typeof initSortables === 'function') initSortables();
     if (typeof updatePreview === 'function') updatePreview();
@@ -615,4 +650,138 @@ function initSortables() {
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('editTitle').addEventListener('input', updatePreview);
     document.getElementById('editBreadcrumb').addEventListener('input', updatePreview);
+});
+
+/* =============================================
+   Presets Manager Logic
+   ============================================= */
+let adminPresets = [];
+let activePresetFilterType = 'all';
+let presetIdToDelete = null;
+
+async function loadAdminPresets() {
+    try {
+        const res = await fetch(API_BASE + '/api/presets');
+        const json = await res.json();
+        if (json.success) {
+            adminPresets = json.presets || [];
+            renderAdminPresetsTable();
+        } else {
+            showToast('Failed to load presets.', true);
+        }
+    } catch (e) {
+        console.error('Error fetching presets:', e);
+        showToast('Network error loading presets.', true);
+    }
+}
+
+function renderAdminPresetsTable() {
+    const tbody = document.getElementById('presetsTableBody');
+    const countEl = document.getElementById('presetsCount');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    const searchQuery = document.getElementById('presetsSearchInput') ? document.getElementById('presetsSearchInput').value.toLowerCase().trim() : '';
+
+    const filtered = adminPresets.filter(preset => {
+        // Filter by platform type (pc vs mobile)
+        if (activePresetFilterType !== 'all') {
+            const type = preset.platformType || 'pc';
+            if (type !== activePresetFilterType) return false;
+        }
+
+        // Filter by search query
+        if (searchQuery) {
+            const title = (preset.title || '').toLowerCase();
+            const author = (preset.authorName || '').toLowerCase();
+            const platform = (preset.platform || '').toLowerCase();
+            const category = (preset.category || '').toLowerCase();
+            if (!title.includes(searchQuery) && !author.includes(searchQuery) && !platform.includes(searchQuery) && !category.includes(searchQuery)) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    countEl.textContent = `${filtered.length} presets shown (${adminPresets.length} total)`;
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">No presets found.</td></tr>`;
+        return;
+    }
+
+    filtered.forEach(preset => {
+        const tr = document.createElement('tr');
+        const dateStr = new Date(preset.createdAt).toLocaleDateString();
+        const type = preset.platformType || 'pc';
+        
+        tr.innerHTML = `
+            <td style="font-weight: 600;">${preset.title}</td>
+            <td style="color: var(--text-secondary);">${preset.authorName || 'Anonymous'}</td>
+            <td><span class="preset-type-badge pc" style="background: #f1f5f9; color: #475569;">${preset.category}</span></td>
+            <td><span class="preset-type-badge pc" style="background: #f1f5f9; color: #475569;">${preset.platform}</span></td>
+            <td><span class="preset-type-badge ${type}">${type}</span></td>
+            <td style="color: var(--text-secondary);">${dateStr}</td>
+            <td style="text-align: right;">
+                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px; border-radius: 6px;" onclick="openDeletePresetModal('${preset.id}', '${preset.title.replace(/'/g, "\\'")}')">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function filterPresetsByType(type) {
+    activePresetFilterType = type;
+    
+    // Toggle active class on buttons
+    document.getElementById('filterPresetTypeAll').classList.remove('active');
+    document.getElementById('filterPresetTypePc').classList.remove('active');
+    document.getElementById('filterPresetTypeMobile').classList.remove('active');
+
+    if (type === 'all') document.getElementById('filterPresetTypeAll').classList.add('active');
+    if (type === 'pc') document.getElementById('filterPresetTypePc').classList.add('active');
+    if (type === 'mobile') document.getElementById('filterPresetTypeMobile').classList.add('active');
+
+    renderAdminPresetsTable();
+}
+
+function openDeletePresetModal(id, title) {
+    presetIdToDelete = id;
+    const titleEl = document.getElementById('deletePresetTitle');
+    if (titleEl) titleEl.textContent = `"${title}"`;
+    document.getElementById('deletePresetModal').classList.add('active');
+}
+
+async function confirmDeletePreset() {
+    if (!presetIdToDelete) return;
+    
+    const token = localStorage.getItem('adminToken');
+    try {
+        const res = await fetch(`${API_BASE}/api/presets/${presetIdToDelete}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        const json = await res.json();
+        if (json.success) {
+            showToast('Preset deleted successfully!');
+            closeModals();
+            loadAdminPresets();
+        } else {
+            showToast(json.message || 'Failed to delete preset.', true);
+        }
+    } catch (e) {
+        console.error('Error deleting preset:', e);
+        showToast('Network error deleting preset.', true);
+    }
+    presetIdToDelete = null;
+}
+
+// Attach event listener for preset deletion confirmation on load
+document.addEventListener('DOMContentLoaded', () => {
+    const confirmBtn = document.getElementById('confirmDeletePresetBtn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', confirmDeletePreset);
+    }
 });

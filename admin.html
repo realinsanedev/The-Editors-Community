@@ -6,8 +6,12 @@
     <title>Admin Panel - Editors Community Test</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+    <link rel="dns-prefetch" href="https://res.cloudinary.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="logo.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js" defer></script>
+    <script src="admin.js" defer></script>
     
     
     <style>
@@ -478,8 +482,66 @@
             background: var(--accent);
             color: white;
         }
-        .cat-chip:active {
-            transform: scale(0.95);
+
+        /* Presets Manager Styles */
+        .presets-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1.5px solid var(--border-color);
+        }
+        .presets-filter-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .presets-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .presets-table th, .presets-table td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .presets-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .presets-table tr:hover td {
+            background: #f8fafc;
+        }
+        .presets-table td {
+            color: #0f172a;
+            vertical-align: middle;
+        }
+        .preset-type-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .preset-type-badge.pc {
+            background: rgba(102, 34, 186, 0.08);
+            color: var(--accent);
+        }
+        .preset-type-badge.mobile {
+            background: rgba(16, 185, 129, 0.08);
+            color: var(--success);
+        }
+        .btn-outline.active {
+            background: rgba(102, 34, 186, 0.06);
+            color: var(--accent);
+            border-color: rgba(102, 34, 186, 0.3);
         }
     </style>
 </head>
@@ -565,6 +627,44 @@
                         <button class="btn btn-primary" id="saveBtn" type="button">Save Changes</button>
                     </div>
                 </div>
+
+                <!-- Presets Manager container (hidden by default) -->
+                <div id="presetsManager" style="display: none;">
+                    <div class="presets-header-row">
+                        <h2 style="font-size: 24px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; margin: 0;">Manage Presets</h2>
+                        <span style="font-size: 13px; color: var(--text-secondary); font-weight: 600;" id="presetsCount">0 presets loaded</span>
+                    </div>
+
+                    <div class="presets-filter-bar">
+                        <div style="flex-grow: 1;">
+                            <input type="text" id="presetsSearchInput" class="form-control" placeholder="Search presets by title, author, software..." style="padding: 10px 14px; font-size: 14px;">
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-outline active" id="filterPresetTypeAll" onclick="filterPresetsByType('all')" style="padding: 8px 16px; font-size: 13px;">All</button>
+                            <button class="btn btn-outline" id="filterPresetTypePc" onclick="filterPresetsByType('pc')" style="padding: 8px 16px; font-size: 13px;">PC</button>
+                            <button class="btn btn-outline" id="filterPresetTypeMobile" onclick="filterPresetsByType('mobile')" style="padding: 8px 16px; font-size: 13px;">Mobile</button>
+                        </div>
+                    </div>
+
+                    <div style="overflow-x: auto; margin-top: 20px; border: 1px solid var(--border-color); border-radius: 12px; background: #fff;">
+                        <table class="presets-table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>Category</th>
+                                    <th>Platform</th>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="presetsTableBody">
+                                <!-- Preset rows injected dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
             
             <div class="glass-panel preview-panel-container" style="display: none;" id="previewContainer">
@@ -610,6 +710,18 @@
         </div>
     </div>
 
+    <!-- Delete Preset Confirm Modal -->
+    <div class="modal-overlay" id="deletePresetModal">
+        <div class="modal">
+            <h3>Delete Preset</h3>
+            <p>Are you sure you want to delete the preset <strong id="deletePresetTitle"></strong>? This action cannot be undone and will immediately remove the preset from the community website.</p>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeModals()">Cancel</button>
+                <button class="btn btn-danger" id="confirmDeletePresetBtn">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Login Modal -->
     <div class="modal-overlay" id="loginModal" style="background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
         <div class="modal">
@@ -627,8 +739,5 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    
-    <script src="admin.js"></script>
 </body>
 </html>

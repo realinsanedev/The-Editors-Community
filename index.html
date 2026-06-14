@@ -6,9 +6,12 @@
     <title>Editors Community</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+    <link rel="dns-prefetch" href="https://res.cloudinary.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="logo.png">
-    <link rel="stylesheet" href="styles.css?v=2">
+    <link rel="stylesheet" href="styles.css?v=3">
+    <script src="app.js?v=3" defer></script>
 </head>
 <body>
     <div id="app">
@@ -35,6 +38,7 @@
                 <div class="nav-section">
                     <h3>Start Here</h3>
                     <a href="#introduction" class="nav-link" data-path="introduction">Dashboard</a>
+                    <a href="#bookmarks" class="nav-link" data-path="bookmarks">My Bookmarks</a>
                 </div>
                 
                 <div class="nav-section">
@@ -52,10 +56,21 @@
                 </div>
 
                 <div class="nav-section">
+                    <h3>Preset Hub</h3>
+                    <a href="#presets-pc" class="nav-link" data-path="presets-pc">
+                        <span class="nav-link-icon">✦</span> PC Presets
+                    </a>
+                    <a href="#presets-mobile" class="nav-link" data-path="presets-mobile">
+                        <span class="nav-link-icon">✦</span> Mobile Presets
+                    </a>
+                </div>
+
+                <div class="nav-section">
                     <h3>Useful Websites</h3>
                     <a href="#car-clips" class="nav-link" data-path="car-clips">Car clips</a>
                     <a href="#vfx-pack" class="nav-link" data-path="vfx-pack">VFX Pack</a>
                     <a href="#sfx-pack" class="nav-link" data-path="sfx-pack">SFX Pack</a>
+                    <a href="#calculator" class="nav-link" data-path="calculator">Editing Calculator</a>
                 </div>
 
                 <div class="nav-section">
@@ -89,11 +104,31 @@
                     <button class="btn btn-outline" onclick="openModal('loginModal')">Login</button>
                     <button class="btn btn-primary" onclick="openModal('registerModal')">Sign Up</button>
                 </div>
+                <!-- Notification Bell (shown when logged in) -->
+                <div class="notif-bell-container" id="notifBellSection" style="display: none;">
+                    <button class="notif-bell-btn" id="notifBellBtn" onclick="toggleNotifPanel(event)" aria-label="Notifications">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+                    </button>
+                    <div class="notif-panel" id="notifPanel">
+                        <div class="notif-panel-header">
+                            <span class="notif-panel-title">Notifications</span>
+                            <button class="notif-mark-all-btn" onclick="markAllNotifsRead()">Mark all read</button>
+                        </div>
+                        <div class="notif-list" id="notifList">
+                            <div class="notif-empty">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                                <p>No notifications yet</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div id="authSection" style="display: none;" onclick="openModal('profileModal')">
                     <img id="navProfilePic" src="" alt="Profile" class="nav-avatar">
                     <span id="navUserName" class="nav-username"></span>
                 </div>
             </div>
+
 
             <div id="content-container">
                 <!-- Content injected via JS -->
@@ -325,6 +360,98 @@
         </div>
     </div>
 
+    <!-- Preset Upload Modal -->
+    <div class="modal-overlay" id="presetUploadModal">
+        <div class="modal auth-modal" style="max-width: 500px;">
+            <button class="close-btn" onclick="closeModals()">×</button>
+            <div class="auth-modal-header" style="padding-bottom: 20px;">
+                <h2 style="font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 8px; letter-spacing: -0.02em;">Share a Preset</h2>
+                <p style="color: #64748b; font-size: 15px; margin: 0;">Upload presets or assets to share with the editing community.</p>
+            </div>
+            <div style="padding: 32px;">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="presetUploadTitle" class="form-control" placeholder="E.g., Cinematic LUT Pack v2">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="presetUploadDesc" class="form-control" placeholder="Describe what this preset does and how to use it..." rows="3" style="resize: vertical; min-height: 60px;"></textarea>
+                </div>
+
+                <!-- Platform Type: PC or Mobile -->
+                <div class="form-group">
+                    <label>Editor Type</label>
+                    <div class="preset-platform-type-toggle" id="presetPlatformTypeToggle">
+                        <button type="button" class="platform-type-btn active" id="platformTypePC" onclick="selectPresetPlatformType('pc')">
+                            <span class="platform-type-icon">✦</span>
+                            <span>PC Presets</span>
+                        </button>
+                        <button type="button" class="platform-type-btn" id="platformTypeMobile" onclick="selectPresetPlatformType('mobile')">
+                            <span class="platform-type-icon">✦</span>
+                            <span>Mobile Presets</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="presetUploadCategory" class="form-control">
+                            <option value="Transitions">Transitions</option>
+                            <option value="LUTs">LUTs</option>
+                            <option value="Project Files">Project Files</option>
+                            <option value="SFX/Assets">SFX/Assets</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Software / App</label>
+                        <select id="presetUploadPlatform" class="form-control" name="presetUploadPlatform">
+                            <option value="After Effects">After Effects</option>
+                            <option value="Premiere Pro">Premiere Pro</option>
+                            <option value="Photoshop">Photoshop</option>
+                            <option value="Davinci Resolve">Davinci Resolve</option>
+                            <option value="Blender">Blender</option>
+                            <option value="CapCut">CapCut</option>
+                            <option value="VN Editor">VN Editor</option>
+                            <option value="Alight Motion">Alight Motion</option>
+                            <option value="InShot">InShot</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Resource Source</label>
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                        <button class="btn btn-outline" type="button" id="togglePresetLink" onclick="switchPresetSource('link')" style="flex: 1; border-color: #6622ba; background-color: rgba(102, 34, 186, 0.05); font-weight: 600;">External Link</button>
+                        <button class="btn btn-outline" type="button" id="togglePresetFile" onclick="switchPresetSource('file')" style="flex: 1;">Upload File</button>
+                    </div>
+                </div>
+
+                <!-- External URL container -->
+                <div class="form-group" id="presetLinkContainer">
+                    <label>External Download URL</label>
+                    <input type="text" id="presetUploadLink" class="form-control" placeholder="E.g., Drive / Dropbox / Mediafire Link">
+                </div>
+
+                <!-- File upload container -->
+                <div class="form-group" id="presetFileContainer" style="display: none;">
+                    <label>File Upload</label>
+                    <div style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s ease; background: #f8fafc;" id="presetFileBox" onclick="document.getElementById('presetUploadFile').click()">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 12px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        <div style="font-size: 14px; color: #64748b; font-weight: 500;" id="presetFileBoxText">Click to select file (under 2MB)</div>
+                    </div>
+                    <input type="file" id="presetUploadFile" style="display: none" onchange="handlePresetFileSelect(this)">
+                </div>
+
+                <div id="presetUploadError" class="error-msg"></div>
+                <button class="btn btn-auth-primary" style="margin-top: 24px; width: 100%;" id="presetSubmitBtn" onclick="handlePresetUpload()">
+                    <span>Share Preset</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Search Command Palette Modal -->
     <div class="modal-overlay search-palette-overlay" id="searchPaletteModal">
         <div class="search-palette">
@@ -347,6 +474,5 @@
         </div>
     </div>
 
-    <script src="app.js?v=2"></script>
 </body>
 </html>

@@ -158,11 +158,11 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Helper to upload files to Cloudinary
-function uploadToCloudinary(file) {
+function uploadToCloudinary(file, resourceType = 'auto') {
     return new Promise((resolve, reject) => {
         if (!file) return resolve('');
         const uploadStream = cloudinary.uploader.upload_stream(
-            { folder: 'editors_community' },
+            { folder: 'editors_community', resource_type: resourceType },
             (error, result) => {
                 if (error) return reject(error);
                 resolve(result.secure_url);
@@ -215,7 +215,7 @@ app.post('/api/users/register', upload.fields([{ name: 'profilePic', maxCount: 1
         await db.collection('users').doc(userId).set(newUser);
         
         const token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '7d' });
-        res.json({ success: true, token, user: { id: userId, username, email, name, bio: newUser.bio, profilePic, profileBanner } });
+        res.json({ success: true, token, user: { id: userId, username, email, name, bio: newUser.bio, profilePic, profileBanner, bookmarks: [] } });
     } catch (err) {
         console.error('Registration error:', err);
         res.status(500).json({ success: false, message: 'Server error during registration' });
@@ -235,7 +235,7 @@ app.post('/api/users/login', async (req, res) => {
         if (!isMatch) return res.status(400).json({ success: false, message: 'Invalid credentials' });
         
         const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
-        res.json({ success: true, token, user: { id: user.id, username: user.username, email: user.email, name: user.name, bio: user.bio || '', profilePic: user.profilePic, profileBanner: user.profileBanner } });
+        res.json({ success: true, token, user: { id: user.id, username: user.username, email: user.email, name: user.name, bio: user.bio || '', profilePic: user.profilePic, profileBanner: user.profileBanner, bookmarks: user.bookmarks || [] } });
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ success: false, message: 'Server error during login' });
@@ -274,7 +274,7 @@ app.get('/api/users/profile', authenticateUser, async (req, res) => {
         const userDoc = await db.collection('users').doc(req.userId).get();
         if (!userDoc.exists) return res.status(404).json({ success: false, message: 'User not found' });
         const user = userDoc.data();
-        res.json({ success: true, user: { id: user.id, username: user.username, email: user.email, name: user.name, bio: user.bio || '', profilePic: user.profilePic, profileBanner: user.profileBanner } });
+        res.json({ success: true, user: { id: user.id, username: user.username, email: user.email, name: user.name, bio: user.bio || '', profilePic: user.profilePic, profileBanner: user.profileBanner, bookmarks: user.bookmarks || [] } });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Server error fetching profile' });
     }
@@ -305,12 +305,33 @@ app.post('/api/users/profile', authenticateUser, upload.fields([{ name: 'profile
         
         await userDocRef.set(user);
         
-        res.json({ success: true, message: 'Profile updated', user: { id: user.id, username: user.username, email: user.email, name: user.name, bio: user.bio || '', profilePic: user.profilePic, profileBanner: user.profileBanner } });
+        res.json({ success: true, message: 'Profile updated', user: { id: user.id, username: user.username, email: user.email, name: user.name, bio: user.bio || '', profilePic: user.profilePic, profileBanner: user.profileBanner, bookmarks: user.bookmarks || [] } });
     } catch (err) {
         console.error('Profile update error:', err);
         res.status(500).json({ success: false, message: 'Server error updating profile' });
     }
 });
+
+// --- NOTIFICATION HELPER ---
+
+async function createNotification(toUserId, type, message, link, fromUserName) {
+    if (!db || !toUserId) return;
+    try {
+        const notifId = uuidv4();
+        await db.collection('notifications').doc(notifId).set({
+            id: notifId,
+            userId: toUserId,
+            type,
+            message,
+            link: link || '',
+            fromUserName: fromUserName || 'Someone',
+            read: false,
+            createdAt: new Date().toISOString()
+        });
+    } catch (e) {
+        console.error('Error creating notification:', e);
+    }
+}
 
 // --- FORUM ROUTES ---
 
@@ -415,10 +436,279 @@ app.post('/api/forums/:id/reply', authenticateUserOptional, upload.single('image
         post.replies.push(newReply);
         await postRef.update({ replies: post.replies });
 
+        // Notify post author (skip self-replies)
+        if (post.authorId && post.authorId !== req.userId) {
+            await createNotification(
+                post.authorId,
+                'reply',
+                `${authorName} replied to your post: "${post.title}"`,
+                `#forum-post-${post.id}`,
+                authorName
+            );
+        }
+
         res.json({ success: true, reply: newReply });
     } catch (err) {
         console.error('Forum reply error:', err);
         res.status(500).json({ success: false, message: 'Server error posting reply' });
+    }
+});
+
+// --- PRESET ROUTES ---
+
+app.get('/api/presets', async (req, res) => {
+    try {
+        const presetSnap = await db.collection('presets').get();
+        const presets = [];
+        presetSnap.forEach(doc => presets.push(doc.data()));
+        // Sort by newest first
+        presets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        res.json({ success: true, presets });
+    } catch (err) {
+        console.error('Error fetching presets:', err);
+        res.status(500).json({ success: false, message: 'Server error fetching presets' });
+    }
+});
+
+app.post('/api/presets', authenticateUserOptional, upload.single('file'), async (req, res) => {
+    const { title, description, category, platform, externalUrl, platformType } = req.body;
+    if (!title || !description || !category || !platform) {
+        return res.status(400).json({ success: false, message: 'Title, description, category, and platform are required' });
+    }
+
+    try {
+        let authorId = null;
+        let authorName = 'Anonymous';
+        let authorAvatar = 'https://api.dicebear.com/6.x/initials/svg?seed=Anon';
+
+        if (req.userId) {
+            const userDoc = await db.collection('users').doc(req.userId).get();
+            if (userDoc.exists) {
+                const user = userDoc.data();
+                authorId = user.id;
+                authorName = user.username;
+                authorAvatar = user.profilePic || 'https://api.dicebear.com/6.x/initials/svg?seed=' + user.name;
+            }
+        }
+
+        let downloadUrl = externalUrl || '';
+        let fileName = '';
+        if (req.file) {
+            fileName = req.file.originalname;
+            downloadUrl = await uploadToCloudinary(req.file, 'auto');
+        }
+
+        if (!downloadUrl) {
+            return res.status(400).json({ success: false, message: 'Please provide either an external URL or upload a file' });
+        }
+
+        const presetId = uuidv4();
+        const newPreset = {
+            id: presetId,
+            title,
+            description,
+            category,
+            platform,
+            platformType: platformType || 'pc',
+            downloadUrl,
+            fileName,
+            authorId,
+            authorName,
+            authorAvatar,
+            createdAt: new Date().toISOString(),
+            upvotes: [],
+            downloadsCount: 0
+        };
+
+        await db.collection('presets').doc(presetId).set(newPreset);
+        res.json({ success: true, preset: newPreset });
+    } catch (err) {
+        console.error('Error adding preset:', err);
+        res.status(500).json({ success: false, message: 'Server error adding preset' });
+    }
+});
+
+app.post('/api/presets/:id/like', authenticateUser, async (req, res) => {
+    try {
+        const presetRef = db.collection('presets').doc(req.params.id);
+        const presetDoc = await presetRef.get();
+        if (!presetDoc.exists) return res.status(404).json({ success: false, message: 'Preset not found' });
+
+        const preset = presetDoc.data();
+        const upvotes = preset.upvotes || [];
+        const index = upvotes.indexOf(req.userId);
+
+        const isLiking = index === -1;
+        if (isLiking) {
+            upvotes.push(req.userId);
+            // Notify preset author (skip self-likes)
+            if (preset.authorId && preset.authorId !== req.userId) {
+                const likerDoc = await db.collection('users').doc(req.userId).get();
+                const likerName = likerDoc.exists ? likerDoc.data().username : 'Someone';
+                await createNotification(
+                    preset.authorId,
+                    'like',
+                    `${likerName} liked your preset "${preset.title}"`,
+                    preset.platformType === 'mobile' ? '#presets-mobile' : '#presets-pc',
+                    likerName
+                );
+            }
+        } else {
+            upvotes.splice(index, 1);
+        }
+
+        await presetRef.update({ upvotes });
+        res.json({ success: true, upvotes });
+    } catch (err) {
+        console.error('Error toggling like:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+app.post('/api/presets/:id/download', async (req, res) => {
+    try {
+        const presetRef = db.collection('presets').doc(req.params.id);
+        const presetDoc = await presetRef.get();
+        if (!presetDoc.exists) return res.status(404).json({ success: false, message: 'Preset not found' });
+
+        const preset = presetDoc.data();
+        const downloadsCount = (preset.downloadsCount || 0) + 1;
+
+        await presetRef.update({ downloadsCount });
+        res.json({ success: true, downloadsCount });
+    } catch (err) {
+        console.error('Error updating download count:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// --- PRESET RATING ROUTE ---
+
+app.post('/api/presets/:id/rate', authenticateUser, async (req, res) => {
+    const ratingNum = parseInt(req.body.rating);
+    if (!ratingNum || ratingNum < 1 || ratingNum > 5) {
+        return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+    }
+    try {
+        const presetRef = db.collection('presets').doc(req.params.id);
+        const presetDoc = await presetRef.get();
+        if (!presetDoc.exists) return res.status(404).json({ success: false, message: 'Preset not found' });
+
+        const preset = presetDoc.data();
+        let ratings = preset.ratings || [];
+        ratings = ratings.filter(r => r.userId !== req.userId);
+        ratings.push({ userId: req.userId, value: ratingNum });
+
+        const avgRating = Math.round((ratings.reduce((s, r) => s + r.value, 0) / ratings.length) * 10) / 10;
+        await presetRef.update({ ratings, avgRating });
+        res.json({ success: true, ratings, avgRating });
+    } catch (err) {
+        console.error('Error rating preset:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// --- DELETE PRESET ROUTE (Admin Protected) ---
+
+app.delete('/api/presets/:id', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || authHeader !== `Bearer ${AUTH_TOKEN}`) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    try {
+        const presetId = req.params.id;
+        const presetRef = db.collection('presets').doc(presetId);
+        const presetDoc = await presetRef.get();
+        if (!presetDoc.exists) {
+            return res.status(404).json({ success: false, message: 'Preset not found' });
+        }
+        await presetRef.delete();
+        res.json({ success: true, message: 'Preset deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting preset:', err);
+        res.status(500).json({ success: false, message: 'Server error deleting preset' });
+    }
+});
+
+// --- NOTIFICATION ROUTES ---
+
+app.get('/api/notifications', authenticateUser, async (req, res) => {
+    try {
+        const snap = await db.collection('notifications').where('userId', '==', req.userId).get();
+        const notifs = [];
+        snap.forEach(doc => notifs.push(doc.data()));
+        notifs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        res.json({ success: true, notifications: notifs.slice(0, 30) });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+app.post('/api/notifications/read-all', authenticateUser, async (req, res) => {
+    try {
+        const snap = await db.collection('notifications')
+            .where('userId', '==', req.userId)
+            .where('read', '==', false)
+            .get();
+        const batch = db.batch();
+        snap.docs.forEach(doc => batch.update(doc.ref, { read: true }));
+        await batch.commit();
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+app.post('/api/notifications/:id/read', authenticateUser, async (req, res) => {
+    try {
+        await db.collection('notifications').doc(req.params.id).update({ read: true });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// --- BOOKMARK ROUTES ---
+
+app.get('/api/users/bookmarks', authenticateUser, async (req, res) => {
+    try {
+        const userDoc = await db.collection('users').doc(req.userId).get();
+        if (!userDoc.exists) return res.status(404).json({ success: false, message: 'User not found' });
+        const user = userDoc.data();
+        res.json({ success: true, bookmarks: user.bookmarks || [] });
+    } catch (err) {
+        console.error('Error fetching bookmarks:', err);
+        res.status(500).json({ success: false, message: 'Server error fetching bookmarks' });
+    }
+});
+
+app.post('/api/users/bookmarks/toggle', authenticateUser, async (req, res) => {
+    const { type, key, title, url } = req.body;
+    if (!type || !title) {
+        return res.status(400).json({ success: false, message: 'Bookmark type and title are required' });
+    }
+
+    try {
+        const userRef = db.collection('users').doc(req.userId);
+        const userDoc = await userRef.get();
+        if (!userDoc.exists) return res.status(404).json({ success: false, message: 'User not found' });
+
+        const user = userDoc.data();
+        let bookmarks = user.bookmarks || [];
+        const index = bookmarks.findIndex(item => (item.url === url && url !== '#') || (item.title === title && item.key === key));
+
+        if (index === -1) {
+            bookmarks.push({ type, key, title, url, bookmarkedAt: new Date().toISOString() });
+        } else {
+            bookmarks.splice(index, 1);
+        }
+
+        await userRef.update({ bookmarks });
+        res.json({ success: true, bookmarks });
+    } catch (err) {
+        console.error('Error toggling bookmark:', err);
+        res.status(500).json({ success: false, message: 'Server error toggling bookmark' });
     }
 });
 
