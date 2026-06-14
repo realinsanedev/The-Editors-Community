@@ -631,6 +631,29 @@ app.delete('/api/presets/:id', async (req, res) => {
     }
 });
 
+// --- DELETE FORUM POST ROUTE (Admin Protected) ---
+
+app.delete('/api/forums/:id', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || authHeader !== `Bearer ${AUTH_TOKEN}`) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    try {
+        const postId = req.params.id;
+        const postRef = db.collection('forums').doc(postId);
+        const postDoc = await postRef.get();
+        if (!postDoc.exists) {
+            return res.status(404).json({ success: false, message: 'Forum post not found' });
+        }
+        await postRef.delete();
+        res.json({ success: true, message: 'Forum post deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting forum post:', err);
+        res.status(500).json({ success: false, message: 'Server error deleting forum post' });
+    }
+});
+
 // --- NOTIFICATION ROUTES ---
 
 app.get('/api/notifications', authenticateUser, async (req, res) => {

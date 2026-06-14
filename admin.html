@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="logo.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js" defer></script>
-    <script src="admin.js?v=5" defer></script>
+    <script src="admin.js?v=6" defer></script>
     
     
     <style>
@@ -665,6 +665,38 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Forums Manager container (hidden by default) -->
+                <div id="forumsManager" style="display: none;">
+                    <div class="presets-header-row">
+                        <h2 style="font-size: 24px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; margin: 0;">Manage Forums</h2>
+                        <span style="font-size: 13px; color: var(--text-secondary); font-weight: 600;" id="forumsCount">0 posts loaded</span>
+                    </div>
+
+                    <div class="presets-filter-bar">
+                        <div style="flex-grow: 1;">
+                            <input type="text" id="forumsSearchInput" class="form-control" placeholder="Search forums by title, author, content..." style="padding: 10px 14px; font-size: 14px;">
+                        </div>
+                    </div>
+
+                    <div style="overflow-x: auto; margin-top: 20px; border: 1px solid var(--border-color); border-radius: 12px; background: #fff;">
+                        <table class="presets-table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>Content Preview</th>
+                                    <th>Replies</th>
+                                    <th>Date</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="forumsTableBody">
+                                <!-- Forum rows injected dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
             
             <div class="glass-panel preview-panel-container" style="display: none;" id="previewContainer">
@@ -718,6 +750,18 @@
             <div class="modal-actions">
                 <button class="btn btn-outline" onclick="closeModals()">Cancel</button>
                 <button class="btn btn-danger" id="confirmDeletePresetBtn">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Forum Confirm Modal -->
+    <div class="modal-overlay" id="deleteForumModal">
+        <div class="modal">
+            <h3>Delete Forum Post</h3>
+            <p>Are you sure you want to delete the forum post <strong id="deleteForumTitle"></strong>? This action cannot be undone and will immediately remove the post and all its replies from the website.</p>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeModals()">Cancel</button>
+                <button class="btn btn-danger" id="confirmDeleteForumBtn">Yes, Delete</button>
             </div>
         </div>
     </div>

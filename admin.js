@@ -131,6 +131,13 @@ function setupSearch() {
             renderAdminPresetsTable();
         });
     }
+
+    const forumsSearchInput = document.getElementById('forumsSearchInput');
+    if (forumsSearchInput) {
+        forumsSearchInput.addEventListener('input', () => {
+            renderAdminForumsTable();
+        });
+    }
 }
 
 function renderCategoryList(filterQuery = '') {
@@ -162,6 +169,18 @@ function renderCategoryList(filterQuery = '') {
         div.onclick = () => loadEditor('_presets');
         list.appendChild(div);
     }
+
+    // Add special forums manager item
+    const forumTitle = "✦ Manage Forums";
+    if (!filterQuery || forumTitle.toLowerCase().includes(filterQuery)) {
+        const div = document.createElement('div');
+        div.className = `category-item ${currentKey === '_forums' ? 'active' : ''}`;
+        div.textContent = forumTitle;
+        div.style.borderLeft = '3px solid var(--accent)';
+        div.style.background = currentKey === '_forums' ? 'rgba(102, 34, 186, 0.08)' : '';
+        div.onclick = () => loadEditor('_forums');
+        list.appendChild(div);
+    }
 }
 
 function loadEditor(key) {
@@ -173,6 +192,7 @@ function loadEditor(key) {
     if (key === '_presets') {
         document.getElementById('editorForm').style.display = 'none';
         document.getElementById('presetsManager').style.display = 'block';
+        document.getElementById('forumsManager').style.display = 'none';
         
         // Hide live preview panel if open
         const grid = document.querySelector('.editor-grid');
@@ -184,7 +204,23 @@ function loadEditor(key) {
         return;
     }
 
+    if (key === '_forums') {
+        document.getElementById('editorForm').style.display = 'none';
+        document.getElementById('presetsManager').style.display = 'none';
+        document.getElementById('forumsManager').style.display = 'block';
+        
+        // Hide live preview panel if open
+        const grid = document.querySelector('.editor-grid');
+        if (grid && grid.classList.contains('split-mode')) {
+            togglePreview();
+        }
+        
+        loadAdminForums();
+        return;
+    }
+
     document.getElementById('presetsManager').style.display = 'none';
+    document.getElementById('forumsManager').style.display = 'none';
     document.getElementById('editorForm').style.display = 'block';
 
     const section = data[key] || {};
@@ -802,10 +838,121 @@ async function confirmDeletePreset() {
     presetIdToDelete = null;
 }
 
-// Attach event listener for preset deletion confirmation on load
+// Attach event listeners for preset and forum deletion confirmation on load
 document.addEventListener('DOMContentLoaded', () => {
     const confirmBtn = document.getElementById('confirmDeletePresetBtn');
     if (confirmBtn) {
         confirmBtn.addEventListener('click', confirmDeletePreset);
     }
+
+    const confirmForumBtn = document.getElementById('confirmDeleteForumBtn');
+    if (confirmForumBtn) {
+        confirmForumBtn.addEventListener('click', confirmDeleteForum);
+    }
 });
+
+/* =============================================
+   Forums Manager Logic
+   ============================================= */
+let adminForums = [];
+let forumIdToDelete = null;
+
+async function loadAdminForums() {
+    try {
+        const res = await fetch(API_BASE + '/api/forums');
+        const json = await res.json();
+        if (json.success) {
+            adminForums = json.forums || [];
+            renderAdminForumsTable();
+        } else {
+            showToast('Failed to load forums.', true);
+        }
+    } catch (e) {
+        console.error('Error fetching forums:', e);
+        showToast('Network error loading forums.', true);
+    }
+}
+
+function renderAdminForumsTable() {
+    const tbody = document.getElementById('forumsTableBody');
+    const countEl = document.getElementById('forumsCount');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    const searchQuery = document.getElementById('forumsSearchInput') ? document.getElementById('forumsSearchInput').value.toLowerCase().trim() : '';
+
+    const filtered = adminForums.filter(post => {
+        if (searchQuery) {
+            const title = (post.title || '').toLowerCase();
+            const content = (post.content || '').toLowerCase();
+            const author = (post.authorName || '').toLowerCase();
+            if (!title.includes(searchQuery) && !content.includes(searchQuery) && !author.includes(searchQuery)) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    countEl.textContent = `${filtered.length} posts shown (${adminForums.length} total)`;
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">No forum posts found.</td></tr>`;
+        return;
+    }
+
+    filtered.forEach(post => {
+        const tr = document.createElement('tr');
+        const dateStr = new Date(post.createdAt).toLocaleDateString();
+        
+        // Truncate content preview to 60 characters
+        let contentPreview = post.content || '';
+        if (contentPreview.length > 60) {
+            contentPreview = contentPreview.substring(0, 57) + '...';
+        }
+        
+        tr.innerHTML = `
+            <td style="font-weight: 600;">${post.title}</td>
+            <td style="color: var(--text-secondary);">${post.authorName || 'Anonymous'}</td>
+            <td style="color: var(--text-secondary); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${contentPreview}</td>
+            <td><span class="preset-type-badge pc" style="background: #f1f5f9; color: #475569;">${post.replies ? post.replies.length : 0} replies</span></td>
+            <td style="color: var(--text-secondary);">${dateStr}</td>
+            <td style="text-align: right;">
+                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px; border-radius: 6px;" onclick="openDeleteForumModal('${post.id}', '${post.title.replace(/'/g, "\\'")}')">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function openDeleteForumModal(id, title) {
+    forumIdToDelete = id;
+    const titleEl = document.getElementById('deleteForumTitle');
+    if (titleEl) titleEl.textContent = `"${title}"`;
+    document.getElementById('deleteForumModal').classList.add('active');
+}
+
+async function confirmDeleteForum() {
+    if (!forumIdToDelete) return;
+    
+    const token = localStorage.getItem('adminToken');
+    try {
+        const res = await fetch(`${API_BASE}/api/forums/${forumIdToDelete}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        const json = await res.json();
+        if (json.success) {
+            showToast('Forum post deleted successfully!');
+            closeModals();
+            loadAdminForums();
+        } else {
+            showToast(json.message || 'Failed to delete forum post.', true);
+        }
+    } catch (e) {
+        console.error('Error deleting forum post:', e);
+        showToast('Network error deleting forum post.', true);
+    }
+    forumIdToDelete = null;
+}
