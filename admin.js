@@ -720,6 +720,10 @@ let activePresetFilterType = 'all';
 let presetIdToDelete = null;
 
 async function loadAdminPresets() {
+    const tbody = document.getElementById('presetsTableBody');
+    if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="spinner-container"><div class="spinner"></div><span>Loading presets...</span></div></td></tr>`;
+    }
     try {
         const res = await fetch(API_BASE + '/api/presets');
         const json = await res.json();
@@ -858,6 +862,10 @@ let adminForums = [];
 let forumIdToDelete = null;
 
 async function loadAdminForums() {
+    const tbody = document.getElementById('forumsTableBody');
+    if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="spinner-container"><div class="spinner"></div><span>Loading forums...</span></div></td></tr>`;
+    }
     try {
         const res = await fetch(API_BASE + '/api/forums');
         const json = await res.json();
