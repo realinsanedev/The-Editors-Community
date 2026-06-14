@@ -252,8 +252,9 @@ function renderPage() {
         html += `<div class="page-breadcrumbs">${pageData.breadcrumb}</div>`;
         html += `<h1 class="page-title">${pageData.title}</h1>`;
     }
-
-    html += pageData.content;
+    // Strip legacy disclaimer text from page content (now handled by site footer)
+    let cleanContent = (pageData.content || '').replace(/<p[^>]*>all content provided on this website[\s\S]*?<\/p>/gi, '');
+    html += cleanContent;
     
     if (pageData.softwareGroups && pageData.softwareGroups.length > 0) {
         pageData.softwareGroups.forEach(group => {
