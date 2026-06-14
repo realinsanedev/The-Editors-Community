@@ -227,12 +227,14 @@ body {
     line-height: 0.9;
 }
 
-.intro-logo .cursive {
-    font-family: 'Brush Script MT', 'Comic Sans MS', cursive;
-    font-size: 80px;
-    color: #6622ba;
-    transform: rotate(-5deg);
-    margin-bottom: -10px;
+.intro-logo .logo-the {
+    font-family: inherit;
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--text-primary);
+    text-transform: lowercase;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
 }
 
 .home-logo-img {
@@ -1453,10 +1455,9 @@ body {
         white-space: normal !important;
     }
 
-    .intro-logo .cursive {
-        font-size: 44px !important;
-        transform: rotate(-5deg) !important;
-        margin-bottom: -6px;
+    .intro-logo .logo-the {
+        font-size: 16px !important;
+        margin-bottom: 6px !important;
     }
 
     .home-logo-img {
