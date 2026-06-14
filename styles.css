@@ -55,14 +55,12 @@ body {
     border-right: 1px solid var(--sidebar-border);
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    overflow: hidden;
     z-index: 10;
 }
 
 .sidebar-header {
     padding: 24px 20px 16px;
-    position: sticky;
-    top: 0;
     background-color: var(--sidebar-bg);
     z-index: 2;
 }
@@ -122,6 +120,8 @@ body {
 
 .sidebar-nav {
     padding: 0 20px 24px;
+    overflow-y: auto;
+    flex: 1;
 }
 
 .nav-section {
