@@ -235,6 +235,12 @@ body {
     margin-bottom: -10px;
 }
 
+.home-logo-img {
+    max-width: 140px;
+    height: auto;
+    object-fit: contain;
+}
+
 .intro-subtitle {
     text-align: center;
     font-size: 20px;
@@ -1451,6 +1457,10 @@ body {
         font-size: 44px !important;
         transform: rotate(-5deg) !important;
         margin-bottom: -6px;
+    }
+
+    .home-logo-img {
+        max-width: 90px !important;
     }
 
     .intro-subtitle {
