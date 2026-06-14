@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download — Editors Community</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="logo.png">
+    <style>
+        :root {
+            --purple:        #6622ba;
+            --purple-mid:    #7c3aed;
+            --purple-light:  rgba(102, 34, 186, 0.10);
+            --purple-border: rgba(102, 34, 186, 0.18);
+            --bg:            #f3f4f6;
+            --text-primary:  #111111;
+            --text-secondary:#6b7280;
+            --glass-bg:      rgba(255,255,255,0.60);
+            --glass-border:  rgba(255,255,255,0.75);
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter Tight', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            overflow: hidden;
+            zoom: 1.1;
+        }
+
+        /* ── Background identical to main site ── */
+        .bg-blob {
+            position: fixed;
+            top: -30vh; right: -20vw;
+            width: 130vw; height: 130vh;
+            background: radial-gradient(circle, rgba(102,34,186,0.42) 0%, rgba(243,244,246,0) 65%);
+            pointer-events: none;
+        }
+        .bg-blob-bottom {
+            position: fixed;
+            bottom: -25vh; left: -15vw;
+            width: 75vw; height: 75vh;
+            background: radial-gradient(circle, rgba(102,34,186,0.10) 0%, rgba(243,244,246,0) 70%);
+            pointer-events: none;
+        }
+        .bg-grid {
+            position: fixed; inset: 0;
+            background-image:
+                linear-gradient(rgba(102,34,186,0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(102,34,186,0.035) 1px, transparent 1px);
+            background-size: 52px 52px;
+            pointer-events: none;
+        }
+
+        /* ── Layout ── */
+        .page {
+            position: relative; z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px 80px;
+        }
+
+        /* ── Top bar ── */
+        .topbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background: rgba(243,244,246,0.70);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255,255,255,0.6);
+            z-index: 50;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 6px 14px 6px 10px;
+            border-radius: 30px;
+            background: rgba(255,255,255,0.55);
+            border: 1px solid rgba(255,255,255,0.8);
+            transition: all 0.22s ease;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+        }
+        .back-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.9);
+            transform: translateX(-2px);
+            box-shadow: 0 3px 14px rgba(102,34,186,0.10);
+        }
+
+        .topbar-brand {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 0.3px;
+        }
+        .topbar-brand span { color: var(--purple); }
+
+        /* ── Main card ── */
+        .card {
+            width: 100%;
+            max-width: 480px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border-radius: 28px;
+            padding: 40px 36px 36px;
+            box-shadow:
+                0 40px 80px -20px rgba(102,34,186,0.14),
+                0 8px 20px rgba(0,0,0,0.04),
+                inset 0 1px 0 rgba(255,255,255,0.95);
+            animation: floatIn 0.55s cubic-bezier(0.16,1,0.3,1) both;
+        }
+
+        @keyframes floatIn {
+            from { opacity:0; transform: translateY(30px) scale(0.97); }
+            to   { opacity:1; transform: translateY(0)    scale(1); }
+        }
+
+        /* ── Icon area ── */
+        .icon-wrap {
+            width: 70px; height: 70px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(102,34,186,0.12) 0%, rgba(124,58,237,0.07) 100%);
+            border: 1.5px solid var(--purple-border);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 22px;
+            box-shadow: 0 6px 24px rgba(102,34,186,0.10);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .icon-wrap:hover {
+            transform: translateY(-3px) scale(1.04);
+            box-shadow: 0 12px 32px rgba(102,34,186,0.18);
+        }
+        .icon-wrap svg { color: var(--purple); }
+
+        /* ── Pill badge ── */
+        .shared-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(102,34,186,0.07);
+            border: 1px solid var(--purple-border);
+            color: var(--purple);
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.9px;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 30px;
+            margin-bottom: 16px;
+        }
+
+        /* ── Title ── */
+        .dl-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.7px;
+            line-height: 1.2;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        /* ── Subtitle / section ── */
+        .dl-sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        /* ── Info chips ── */
+        .chips {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.70);
+            border: 1px solid rgba(102,34,186,0.12);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 30px;
+            backdrop-filter: blur(6px);
+        }
+        .chip svg { color: var(--purple); flex-shrink: 0; }
+
+        /* ── Divider ── */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(102,34,186,0.14), transparent);
+            margin: 0 0 26px;
+        }
+
+        /* ── Password row ── */
+        .pass-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(102,34,186,0.055);
+            border: 1px solid rgba(102,34,186,0.13);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .pass-label {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .pass-label svg { color: var(--purple); }
+
+        .pass-value-wrap {
+            display: flex; align-items: center; gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .pass-value {
+            font-size: 13.5px;
+            font-weight: 800;
+            color: var(--purple);
+            background: rgba(102,34,186,0.10);
+            padding: 3px 10px;
+            border-radius: 7px;
+            letter-spacing: 0.3px;
+        }
+
+        .copy-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: var(--purple);
+            color: white;
+            border: none; font-family: inherit;
+            font-size: 11.5px; font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .copy-btn:hover { background: var(--purple-mid); transform: scale(1.04); }
+        .copy-btn.copied { background: #10b981; }
+
+        /* ── Download button ── */
+        .dl-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 11px;
+            width: 100%;
+            padding: 16px 28px;
+            background: linear-gradient(135deg, #7c3aed 0%, #6622ba 100%);
+            color: white;
+            border: none; font-family: inherit;
+            font-size: 15.5px; font-weight: 800;
+            border-radius: 15px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.28s cubic-bezier(0.16,1,0.3,1);
+            box-shadow:
+                0 10px 28px rgba(102,34,186,0.38),
+                inset 0 1px 0 rgba(255,255,255,0.16);
+            position: relative; overflow: hidden;
+            margin-bottom: 16px;
+            letter-spacing: -0.2px;
+        }
+
+        .dl-btn::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.14) 0%, transparent 55%);
+        }
+        .dl-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            box-shadow: inset 0 -3px 0 rgba(0,0,0,0.15);
+        }
+
+        .dl-btn:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 18px 42px rgba(102,34,186,0.48), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .dl-btn:active { transform: translateY(0) scale(0.99); }
+
+        .dl-btn span, .dl-btn svg { position: relative; z-index: 1; }
+
+        .dl-btn.success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 10px 28px rgba(16,185,129,0.38);
+        }
+
+        @keyframes shimmer {
+            0%   { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+        }
+        .dl-btn .shimmer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+            animation: shimmer 2.4s infinite;
+        }
+
+        /* ── Secondary actions ── */
+        .actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .action-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 12px; font-weight: 600;
+            color: var(--text-secondary);
+            background: rgba(255,255,255,0.5);
+            border: 1px solid rgba(0,0,0,0.07);
+            border-radius: 8px;
+            padding: 7px 13px;
+            cursor: pointer; font-family: inherit;
+            text-decoration: none;
+            transition: all 0.18s ease;
+        }
+        .action-btn:hover { background: rgba(255,255,255,0.85); color: var(--text-primary); }
+        .action-btn.danger:hover { color: #ef4444; border-color: rgba(239,68,68,0.2); background: rgba(239,68,68,0.05); }
+
+        /* ── Notice strip ── */
+        .notice {
+            margin-top: 20px;
+            display: flex; align-items: flex-start; gap: 9px;
+            background: rgba(255,255,255,0.45);
+            border: 1px solid rgba(0,0,0,0.06);
+            border-radius: 10px;
+            padding: 11px 14px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .notice svg { color: #f59e0b; flex-shrink: 0; margin-top: 1px; }
+
+        /* ── Footer ── */
+        .footer {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            text-align: center;
+            padding: 12px 16px;
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            background: rgba(243,244,246,0.65);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(255,255,255,0.55);
+            z-index: 50;
+        }
+        .footer a { color: var(--purple); text-decoration: none; font-weight: 700; }
+        .footer a:hover { text-decoration: underline; }
+
+        /* ── Responsive ── */
+        @media (max-width: 540px) {
+            body { zoom: 1; }
+            .card { padding: 28px 20px 24px; border-radius: 22px; }
+            .dl-title { font-size: 20px; }
+            .topbar { padding: 0 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Backgrounds -->
+    <div class="bg-blob"></div>
+    <div class="bg-blob-bottom"></div>
+    <div class="bg-grid"></div>
+
+    <!-- Top bar -->
+    <div class="topbar">
+        <a class="back-btn" id="backBtn" href="/">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
+        </a>
+        <div class="topbar-brand">Editors <span>Community</span></div>
+    </div>
+
+    <!-- Main -->
+    <div class="page">
+        <div class="card">
+
+            <!-- Icon -->
+            <div class="icon-wrap" id="iconWrap">
+                <!-- swapped by JS based on platform -->
+            </div>
+
+            <!-- Pill -->
+            <div style="text-align:center;">
+                <div class="shared-pill">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                    Shared File
+                </div>
+            </div>
+
+            <!-- Title -->
+            <h1 class="dl-title" id="dlTitle">Loading...</h1>
+            <p class="dl-sub" id="dlSub">Editors Community · Software</p>
+
+            <!-- Chips -->
+            <div class="chips" id="chips">
+                <!-- filled by JS -->
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Password -->
+            <div class="pass-row">
+                <div class="pass-label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Archive Password
+                </div>
+                <div class="pass-value-wrap">
+                    <span class="pass-value">"star"</span>
+                    <button class="copy-btn" id="copyBtn" onclick="copyPassword()">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        Copy
+                    </button>
+                </div>
+            </div>
+
+            <!-- Download button -->
+            <button class="dl-btn" id="dlBtn">
+                <div class="shimmer"></div>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span id="dlBtnText">Download Now</span>
+            </button>
+
+            <!-- Action row -->
+            <div class="actions">
+                <button class="action-btn danger" id="reportBtn" onclick="reportLink()">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                    Report Broken Link
+                </button>
+                <a class="action-btn" href="/" >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    Home
+                </a>
+            </div>
+
+            <!-- Notice -->
+            <div class="notice">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>All content is for <strong>educational &amp; personal use only</strong>. Not affiliated with or endorsed by any software company mentioned.</span>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <a href="/">Editors Community</a> &nbsp;·&nbsp; For educational use only &nbsp;·&nbsp; Password: <strong style="color:#6622ba">star</strong>
+    </div>
+
+    <script>
+        // ── Parse URL params ──
+        const params   = new URLSearchParams(window.location.search);
+        const dlUrl    = params.get('url')     || '#';
+        const dlName   = params.get('name')    || 'Software Download';
+        const dlCat    = params.get('cat')     || 'Software';
+        const dlSect   = params.get('section') || 'Editors Community';
+        const dlFrom   = params.get('from')    || '/';
+
+        // ── Populate ──
+        document.title = dlName + ' — Editors Community';
+        document.getElementById('dlTitle').textContent = dlName;
+        document.getElementById('dlSub').textContent   = 'Editors Community · ' + dlSect;
+        document.getElementById('backBtn').href        = dlFrom;
+
+        // ── Determine platform / type ──
+        const catLower  = dlCat.toLowerCase();
+        const sectLower = dlSect.toLowerCase();
+
+        let platformLabel = 'Mac & Windows';
+        let typeLabel     = 'Free Download';
+        let iconSvg       = '';
+
+        // Software icons
+        const iconSoftwareWindows = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`;
+        const iconSoftwareMac    = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`;
+        const iconPlugin         = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>`;
+        const iconBlender        = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><polyline points="22 8.5 12 15.5 2 8.5"/><polyline points="2 15.5 12 8.5 22 15.5"/><line x1="12" y1="2" x2="12" y2="8.5"/></svg>`;
+        const iconGeneric        = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+
+        if (catLower.includes('windows') && sectLower.includes('software')) {
+            platformLabel = 'Windows';
+            typeLabel     = 'Windows Software';
+            iconSvg       = iconSoftwareWindows;
+        } else if (catLower.includes('mac') && sectLower.includes('software')) {
+            platformLabel = 'macOS';
+            typeLabel     = 'Mac Software';
+            iconSvg       = iconSoftwareMac;
+        } else if (catLower.includes('blender')) {
+            platformLabel = 'Blender Addon';
+            typeLabel     = 'Blender Add-on';
+            iconSvg       = iconBlender;
+        } else if (sectLower.includes('plugin') || catLower.includes('plug')) {
+            platformLabel = 'Mac & Windows';
+            typeLabel     = 'Plugin / Extension';
+            iconSvg       = iconPlugin;
+        } else {
+            iconSvg = iconGeneric;
+        }
+
+        // Set icon
+        document.getElementById('iconWrap').innerHTML = iconSvg;
+
+        // ── Build chips ──
+        const chips = document.getElementById('chips');
+
+        function makeChip(svgStr, label) {
+            const d = document.createElement('div');
+            d.className = 'chip';
+            d.innerHTML = svgStr + `<span>${label}</span>`;
+            return d;
+        }
+
+        const platformSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`;
+        const typeSvg     = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+        const freeSvg     = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+        chips.appendChild(makeChip(platformSvg, platformLabel));
+        chips.appendChild(makeChip(typeSvg,     typeLabel));
+        chips.appendChild(makeChip(freeSvg,     'Free'));
+
+        // ── Download button ──
+        const dlBtn     = document.getElementById('dlBtn');
+        const dlBtnText = document.getElementById('dlBtnText');
+
+        dlBtn.addEventListener('click', () => {
+            if (dlUrl === '#') return;
+
+            // Open download
+            window.open(dlUrl, '_blank', 'noopener,noreferrer');
+
+            // Success flash
+            dlBtn.classList.add('success');
+            dlBtn.querySelector('.shimmer').style.display = 'none';
+            dlBtnText.textContent = 'Opened! Download started ✓';
+
+            const checkSvg = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+            dlBtn.insertAdjacentHTML('afterbegin', `<span id="tempCheck">${checkSvg}</span>`);
+
+            setTimeout(() => {
+                dlBtn.classList.remove('success');
+                dlBtn.querySelector('.shimmer').style.display = '';
+                dlBtnText.textContent = 'Download Again';
+                const tc = document.getElementById('tempCheck');
+                if (tc) tc.remove();
+            }, 3500);
+        });
+
+        // ── Copy password ──
+        function copyPassword() {
+            navigator.clipboard.writeText('star').then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.classList.add('copied');
+                btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`;
+                }, 2500);
+            });
+        }
+
+        // ── Report broken link ──
+        function reportLink() {
+            const subject = encodeURIComponent('Broken Link — Editors Community');
+            const body    = encodeURIComponent(
+                `Hi,\n\nI want to report a broken / incorrect download link:\n\nItem: ${dlName}\nSection: ${dlSect}\nURL: ${dlUrl}\n\nPlease fix at your earliest convenience.\n\nThanks`
+            );
+            window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+        }
+    </script>
+</body>
+</html>

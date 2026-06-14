@@ -255,6 +255,9 @@ function renderPage() {
 
     html += pageData.content;
     
+    // Determine if this is a software/plugin page (routes download through download page)
+    const isSoftwareOrPluginPage = ['windows-softwares', 'mac-softwares', 'windows-plug-ins', 'mac-plug-ins', 'blender-addons'].includes(hash);
+
     if (pageData.softwareGroups && pageData.softwareGroups.length > 0) {
         pageData.softwareGroups.forEach(group => {
             html += `<div class="software-group" style="margin-top: 30px; margin-bottom: 40px;">`;
@@ -268,7 +271,16 @@ function renderPage() {
                     const sLabel = link.label ? link.label.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Link';
                     const sUrl = link.url ? link.url.replace(/"/g, '&quot;') : '#';
                     const highlightStyle = link.isHighlighted ? 'color: #6622ba; border-bottom-color: #6622ba;' : '';
-                    html += `<li><a href="${sUrl}" style="${highlightStyle}" target="_blank">${sLabel}</a></li>`;
+                    if (isSoftwareOrPluginPage && sUrl !== '#') {
+                        const encUrl  = encodeURIComponent(sUrl);
+                        const encName = encodeURIComponent(link.label || 'Download');
+                        const encCat  = encodeURIComponent(pageData.title || hash);
+                        const encSect = encodeURIComponent(pageData.breadcrumb || 'Software');
+                        const encFrom = encodeURIComponent(window.location.pathname + window.location.hash);
+                        html += `<li><a href="/download?url=${encUrl}&name=${encName}&cat=${encCat}&section=${encSect}&from=${encFrom}" style="${highlightStyle}" data-raw-url="${sUrl}" class="sw-dl-link">${sLabel}</a></li>`;
+                    } else {
+                        html += `<li><a href="${sUrl}" style="${highlightStyle}" target="_blank">${sLabel}</a></li>`;
+                    }
                 });
             }
             html += `</ul></div>`;
@@ -288,10 +300,22 @@ function renderPage() {
             const sLabel = link.label ? link.label.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Download';
             const sQuality = link.quality ? link.quality.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
             const sSize = link.size ? link.size.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
-            const sUrl = link.url ? link.url.replace(/"/g, '&quot;') : '#';
+            const rawUrl = link.url || '#';
+            const sUrl = rawUrl.replace(/"/g, '&quot;');
+
+            // Route through download page for software/plugin pages
+            let cardHref = sUrl;
+            if (isSoftwareOrPluginPage && rawUrl !== '#') {
+                const encUrl  = encodeURIComponent(rawUrl);
+                const encName = encodeURIComponent(link.label || 'Download');
+                const encCat  = encodeURIComponent(pageData.title || hash);
+                const encSect = encodeURIComponent(pageData.breadcrumb || 'Software');
+                const encFrom = encodeURIComponent(window.location.pathname + window.location.hash);
+                cardHref = `/download?url=${encUrl}&name=${encName}&cat=${encCat}&section=${encSect}&from=${encFrom}`;
+            }
  
             html += `
-                <a href="${sUrl}" target="_blank" class="dlink-card">
+                <a href="${cardHref}" data-raw-url="${sUrl}" class="dlink-card${isSoftwareOrPluginPage && rawUrl !== '#' ? ' sw-dl-link' : ''}" ${!isSoftwareOrPluginPage || rawUrl === '#' ? 'target="_blank"' : ''}>
                     <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 24px; color: #111; font-family: 'Space Grotesk', sans-serif;">${sLabel}</h4>
                     <div style="display: flex; justify-content: space-between; font-size: 13px; color: #64748b;">
                         ${sQuality ? `<span style="background: #f1f5f9; padding: 6px 12px; border-radius: 8px; font-weight: 600;">${sQuality}</span>` : '<span></span>'}

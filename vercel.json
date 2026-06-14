@@ -36,8 +36,13 @@
       "dest": "api/index.js"
     },
     {
+      "src": "/download",
+      "dest": "download.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/$1"
     }
   ]
 }
+
