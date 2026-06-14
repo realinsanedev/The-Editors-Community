@@ -325,6 +325,28 @@
         </div>
     </div>
 
+    <!-- Search Command Palette Modal -->
+    <div class="modal-overlay search-palette-overlay" id="searchPaletteModal">
+        <div class="search-palette">
+            <div class="search-palette-header">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="palette-search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="paletteSearchInput" placeholder="Search plugins, software, websites, or FAQs..." autocomplete="off">
+                <span class="palette-esc-hint">ESC</span>
+            </div>
+            <div class="search-palette-results" id="paletteSearchResults">
+                <div class="search-palette-empty">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <p>Type to search the community directory...</p>
+                </div>
+            </div>
+            <div class="search-palette-footer">
+                <span class="footer-tip"><kbd>↑↓</kbd> to navigate</span>
+                <span class="footer-tip"><kbd>Enter</kbd> to select</span>
+                <span class="footer-tip"><kbd>Esc</kbd> to close</span>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js?v=2"></script>
 </body>
 </html>

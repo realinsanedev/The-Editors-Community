@@ -4,10 +4,8 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
-        const searchInput = document.querySelector('.search-box input');
-        if (searchInput) {
-            searchInput.focus();
-            searchInput.select();
+        if (typeof openSearchPalette === 'function') {
+            openSearchPalette();
         }
     }
 }, true); // capture phase = runs before browser default
@@ -188,209 +186,303 @@ function renderPage() {
     container.innerHTML = html;
 }
 
-function setupSearch() {
-    const searchInput = document.querySelector('.search-box input');
-    const searchBox = document.querySelector('.search-box');
-    
-    // Focus/blur visual feedback
-    searchInput.addEventListener('focus', () => {
-        searchBox.classList.add('focused');
-    });
-    searchInput.addEventListener('blur', () => {
-        searchBox.classList.remove('focused');
-    });
+let selectedIndex = -1;
+let currentResults = [];
 
-    // Search input handler
-    searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase().trim();
-        const container = document.getElementById('content-container');
-        
-        if (query === '') {
-            window.location.hash = 'introduction';
-            renderPage();
-            return;
+function openSearchPalette() {
+    const modal = document.getElementById('searchPaletteModal');
+    const input = document.getElementById('paletteSearchInput');
+    const sidebarInput = document.querySelector('.search-box input');
+    
+    if (sidebarInput) sidebarInput.value = ''; // clear sidebar input
+    modal.classList.add('active');
+    setTimeout(() => input.focus(), 50);
+    renderPaletteResults('');
+}
+
+function closeSearchPalette() {
+    const modal = document.getElementById('searchPaletteModal');
+    const input = document.getElementById('paletteSearchInput');
+    modal.classList.remove('active');
+    input.value = '';
+    selectedIndex = -1;
+    currentResults = [];
+}
+
+function renderPaletteResults(query) {
+    const resultsContainer = document.getElementById('paletteSearchResults');
+    selectedIndex = -1;
+    currentResults = [];
+
+    if (!query) {
+        resultsContainer.innerHTML = `
+            <div class="search-palette-empty">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: #6622ba; margin-bottom: 16px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <p>Type to search software, plugins, resources...</p>
+            </div>
+        `;
+        return;
+    }
+
+    let sections = [];
+    let items = [];
+
+    for (const [key, section] of Object.entries(data)) {
+        if (key === 'introduction') continue;
+
+        // 1. Check section title
+        const sectionTitle = section.title || key;
+        if (sectionTitle.toLowerCase().includes(query)) {
+            sections.push({
+                type: 'section',
+                key: key,
+                title: sectionTitle,
+                breadcrumb: section.breadcrumb || 'Directory'
+            });
         }
 
-        window.location.hash = 'search';
-        
-        // Remove active class from all nav links
-        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-
-        let resultsHtml = `<div class="page-breadcrumbs">Search</div><h1 class="page-title">Results for "${query}"</h1>`;
-        
-        let sectionsMatched = '';
-        let linksMatched = '';
-        const seenUrls = new Set();
-
-        for (const [key, section] of Object.entries(data)) {
-            if (key === 'introduction') continue;
-            
-            // 1. Search in title
-            const titleMatches = section.title && section.title.toLowerCase().includes(query);
-            
-            let matchedLinks = [];
-
-            // 2. Search in structured softwareGroups
-            if (section.softwareGroups) {
-                section.softwareGroups.forEach(group => {
-                    const groupTitleMatches = group.title && group.title.toLowerCase().includes(query);
-                    if (group.links) {
-                        group.links.forEach(link => {
-                            if (groupTitleMatches || (link.label && link.label.toLowerCase().includes(query))) {
-                                matchedLinks.push({
-                                    group: group.title || 'Software',
-                                    label: link.label,
-                                    url: link.url,
-                                    breadcrumb: section.breadcrumb || 'Link'
-                                });
-                            }
-                        });
-                    }
-                });
-            }
-
-            // 3. Search in structured downloadLinks
-            if (section.downloadLinks) {
-                section.downloadLinks.forEach(link => {
-                    if ((link.label && link.label.toLowerCase().includes(query)) ||
-                        (link.quality && link.quality.toLowerCase().includes(query))) {
-                        matchedLinks.push({
-                            group: 'Download',
-                            label: link.label,
-                            url: link.url,
-                            breadcrumb: section.breadcrumb || 'Download'
-                        });
-                    }
-                });
-            }
-
-            // 4. Search in raw HTML content
-            let contentTextMatches = false;
-            if (section.content) {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = section.content;
-                
-                if (tempDiv.textContent.toLowerCase().includes(query)) {
-                    contentTextMatches = true;
-                }
-
-                // Find specific links
-                const aTags = tempDiv.querySelectorAll('a');
-                aTags.forEach(a => {
-                    const href = a.getAttribute('href');
-                    // Skip discord links and empty links for direct matches unless explicitly searched for Discord
-                    if (href && href !== '#' && !href.includes('discord.com/invite')) {
-                        if (a.textContent.toLowerCase().includes(query)) {
-                            let groupTitle = 'Resource';
-                            const groupDiv = a.closest('.software-group');
-                            if (groupDiv) {
-                                const h3 = groupDiv.querySelector('h3, .software-group-title');
-                                if (h3) groupTitle = h3.textContent;
-                            }
-                            matchedLinks.push({
-                                group: groupTitle,
-                                label: a.textContent,
-                                url: href,
-                                breadcrumb: section.breadcrumb || 'Resource'
+        // 2. Check software groups
+        if (section.softwareGroups) {
+            section.softwareGroups.forEach(group => {
+                const groupTitle = group.title || '';
+                const groupTitleMatches = groupTitle.toLowerCase().includes(query);
+                if (group.links) {
+                    group.links.forEach(link => {
+                        const label = link.label || '';
+                        if (groupTitleMatches || label.toLowerCase().includes(query)) {
+                            items.push({
+                                type: 'link',
+                                key: key,
+                                title: label,
+                                subtitle: groupTitle || 'Software',
+                                url: link.url,
+                                category: section.breadcrumb || 'Software'
                             });
                         }
-                    }
-                });
-                
-                // Find matching groups
-                const h3Tags = tempDiv.querySelectorAll('.software-group-title, .software-group h3');
-                h3Tags.forEach(h3 => {
-                    if (h3.textContent.toLowerCase().includes(query)) {
-                        const groupDiv = h3.closest('.software-group');
-                        if (groupDiv) {
-                            const linksInGroup = groupDiv.querySelectorAll('a');
-                            linksInGroup.forEach(a => {
-                                const href = a.getAttribute('href');
-                                if (href && href !== '#' && !href.includes('discord.com/invite')) {
-                                    matchedLinks.push({
-                                        group: h3.textContent,
-                                        label: a.textContent,
-                                        url: href,
-                                        breadcrumb: section.breadcrumb || 'Resource'
-                                    });
-                                }
-                            });
-                        }
-                    }
-                });
-            }
-
-            // Render matched links for this section
-            matchedLinks.forEach(link => {
-                if (link.url && !seenUrls.has(link.url)) {
-                    seenUrls.add(link.url);
-                    const safeLabel = link.label ? link.label.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Link';
-                    const safeGroup = link.group ? link.group.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
-                    
-                    linksMatched += `
-                        <a href="${link.url}" target="_blank" class="search-result-card link-card hover-lift" style="display: block; margin-bottom: 16px; padding: 20px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; text-decoration: none; color: inherit; transition: all 0.2s;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">${link.breadcrumb} &bull; ${safeGroup}</div>
-                                    <h4 style="font-size: 16px; font-weight: 600; color: #111; margin: 0;">${safeLabel}</h4>
-                                </div>
-                                <div class="icon-wrap" style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: #e0e7ff; border-radius: 50%; color: #4338ca; transition: background 0.2s;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                </div>
-                            </div>
-                        </a>
-                    `;
+                    });
                 }
             });
+        }
 
-            // If the section title matched, or content matched (but maybe no specific link was extracted)
-            if (titleMatches || contentTextMatches) {
-                sectionsMatched += `
-                    <div class="search-result-card" style="margin-bottom: 16px; padding: 20px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; transition: all 0.2s;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                            <div>
-                                <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Section &bull; ${section.breadcrumb || 'General'}</div>
-                                <h3 style="margin-bottom: 8px; font-size: 18px; margin-top: 0;"><a href="#${key}" style="color: #111; text-decoration: none;">${section.title || key}</a></h3>
-                                <a href="#${key}" style="display: inline-block; font-size: 14px; font-weight: 600; color: #4338ca; text-decoration: none;">View Section &rarr;</a>
-                            </div>
+        // 3. Check download links
+        if (section.downloadLinks) {
+            section.downloadLinks.forEach(link => {
+                const label = link.label || '';
+                const quality = link.quality || '';
+                if (label.toLowerCase().includes(query) || quality.toLowerCase().includes(query)) {
+                    items.push({
+                        type: 'download',
+                        key: key,
+                        title: label,
+                        subtitle: `${quality} ${link.size || ''}`.trim(),
+                        url: link.url,
+                        category: section.breadcrumb || 'Downloads'
+                    });
+                }
+            });
+        }
+
+        // 4. Check raw HTML text content for internal links
+        if (section.content) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = section.content;
+            
+            // Check matching <a> tags
+            const aTags = tempDiv.querySelectorAll('a');
+            aTags.forEach(a => {
+                const href = a.getAttribute('href');
+                if (href && href !== '#' && !href.includes('discord.com/invite')) {
+                    const textContent = a.textContent || '';
+                    if (textContent.toLowerCase().includes(query)) {
+                        let groupTitle = 'Resource';
+                        const groupDiv = a.closest('.software-group');
+                        if (groupDiv) {
+                            const h3 = groupDiv.querySelector('h3, .software-group-title');
+                            if (h3) groupTitle = h3.textContent;
+                        }
+                        items.push({
+                            type: 'link',
+                            key: key,
+                            title: textContent,
+                            subtitle: groupTitle,
+                            url: href,
+                            category: section.breadcrumb || 'Resource'
+                        });
+                    }
+                }
+            });
+        }
+    }
+
+    const maxResults = 15;
+    let html = '';
+
+    if (sections.length > 0) {
+        html += `<div class="search-palette-group-title">Sections</div>`;
+        sections.forEach(sec => {
+            if (currentResults.length >= maxResults) return;
+            const index = currentResults.length;
+            currentResults.push(sec);
+            html += `
+                <div class="search-palette-item" data-index="${index}" onclick="handlePaletteSelect(${index})">
+                    <div class="search-palette-item-left">
+                        <div class="search-palette-item-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                        </div>
+                        <div>
+                            <div class="search-palette-item-title">${sec.title}</div>
+                            <div class="search-palette-item-desc">${sec.breadcrumb} section</div>
                         </div>
                     </div>
-                `;
-            }
-        }
-
-        if (sectionsMatched !== '' || linksMatched !== '') {
-            if (linksMatched !== '') {
-                resultsHtml += `<h3 style="margin: 24px 0 16px 0; font-size: 16px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Direct Downloads</h3>`;
-                resultsHtml += `<div class="search-results-links">` + linksMatched + `</div>`;
-            }
-            if (sectionsMatched !== '') {
-                resultsHtml += `<h3 style="margin: 24px 0 16px 0; font-size: 16px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Related Sections</h3>`;
-                resultsHtml += `<div class="search-results-sections">` + sectionsMatched + `</div>`;
-            }
-        } else {
-            resultsHtml += `
-                <div style="text-align: center; padding: 60px 20px;">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 16px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <h3 style="font-size: 18px; color: #475569; margin-bottom: 8px; margin-top: 0;">No results found</h3>
-                    <p style="color: #94a3b8; margin: 0;">We couldn't find anything matching "${query}". Try adjusting your search.</p>
+                    <span class="search-palette-item-badge">Go to</span>
                 </div>
             `;
-        }
+        });
+    }
 
-        container.innerHTML = resultsHtml + `
-            <style>
-                .search-result-card:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.06) !important;
-                    border-color: #cbd5e1 !important;
-                }
-                .link-card:hover .icon-wrap {
-                    background: #c7d2fe !important;
-                }
-            </style>
+    if (items.length > 0) {
+        html += `<div class="search-palette-group-title">Downloads & Resources</div>`;
+        items.forEach(it => {
+            if (currentResults.length >= maxResults) return;
+            const index = currentResults.length;
+            currentResults.push(it);
+            html += `
+                <div class="search-palette-item" data-index="${index}" onclick="handlePaletteSelect(${index})">
+                    <div class="search-palette-item-left">
+                        <div class="search-palette-item-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        </div>
+                        <div>
+                            <div class="search-palette-item-title">${it.title}</div>
+                            <div class="search-palette-item-desc">${it.category} &bull; ${it.subtitle}</div>
+                        </div>
+                    </div>
+                    <span class="search-palette-item-badge">Select</span>
+                </div>
+            `;
+        });
+    }
+
+    if (currentResults.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="search-palette-empty">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: #6b7280; margin-bottom: 16px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <p>No results found for "${query}"</p>
+            </div>
         `;
+    } else {
+        resultsContainer.innerHTML = html;
+    }
+}
+
+function handlePaletteSelect(index) {
+    const item = currentResults[index];
+    if (!item) return;
+
+    if (item.type === 'section') {
+        window.location.hash = '#' + item.key;
+        closeSearchPalette();
+    } else {
+        window.location.hash = '#' + item.key;
+        closeSearchPalette();
+        setTimeout(() => {
+            highlightMatchedResource(item.title);
+        }, 150);
+    }
+}
+
+function highlightMatchedResource(titleText) {
+    const container = document.getElementById('content-container');
+    if (!container) return;
+
+    const links = container.querySelectorAll('a, li, .dlink-card');
+    let targetElement = null;
+
+    for (let el of links) {
+        const text = el.textContent || '';
+        if (text.toLowerCase().includes(titleText.toLowerCase())) {
+            targetElement = el.closest('.dlink-card') || el.closest('li') || el;
+            break;
+        }
+    }
+
+    if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        targetElement.classList.remove('item-highlighted');
+        void targetElement.offsetWidth; // trigger reflow
+        targetElement.classList.add('item-highlighted');
+    }
+}
+
+function setupSearch() {
+    const sidebarSearchBox = document.querySelector('.search-box');
+    const sidebarSearchInput = document.querySelector('.search-box input');
+    
+    if (sidebarSearchBox) {
+        sidebarSearchBox.addEventListener('click', (e) => {
+            openSearchPalette();
+        });
+    }
+
+    if (sidebarSearchInput) {
+        sidebarSearchInput.addEventListener('focus', (e) => {
+            e.preventDefault();
+            sidebarSearchInput.blur();
+            openSearchPalette();
+        });
+    }
+
+    const paletteInput = document.getElementById('paletteSearchInput');
+    if (paletteInput) {
+        paletteInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            renderPaletteResults(query);
+        });
+
+        paletteInput.addEventListener('keydown', (e) => {
+            const items = document.querySelectorAll('.search-palette-item');
+            if (items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (selectedIndex < items.length - 1) {
+                    if (selectedIndex >= 0) items[selectedIndex].classList.remove('selected');
+                    selectedIndex++;
+                    items[selectedIndex].classList.add('selected');
+                    items[selectedIndex].scrollIntoView({ block: 'nearest' });
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (selectedIndex > 0) {
+                    items[selectedIndex].classList.remove('selected');
+                    selectedIndex--;
+                    items[selectedIndex].classList.add('selected');
+                    items[selectedIndex].scrollIntoView({ block: 'nearest' });
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const activeIndex = selectedIndex >= 0 ? selectedIndex : 0;
+                handlePaletteSelect(activeIndex);
+            }
+        });
+    }
+
+    // Keyboard global listener for Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeSearchPalette();
+        }
     });
+
+    // Click outside backdrop to close
+    const overlay = document.getElementById('searchPaletteModal');
+    if (overlay) {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                closeSearchPalette();
+            }
+        });
+    }
 }
 
 window.addEventListener('hashchange', renderPage);
