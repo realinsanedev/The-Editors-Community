@@ -229,6 +229,10 @@ function loadEditor(key) {
     document.getElementById('editBreadcrumb').value = section.breadcrumb || '';
     
     // Load Download Links
+    const addBtn = document.getElementById('addDownloadLinkBtn');
+    if (addBtn) {
+        addBtn.textContent = key === 'useful-tutorials' ? '+ ADD NEW TUTORIAL' : '+ ADD NEW LINK';
+    }
     const dlContainer = document.getElementById('downloadLinksContainer');
     dlContainer.innerHTML = '';
     const dlinks = section.downloadLinks || [];
@@ -272,11 +276,19 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     const softwareGroups = Array.from(groupElements).map(el => {
         const title = el.querySelector('.sg-title').value;
         const linkElements = el.querySelectorAll('.slink-item');
-        const links = Array.from(linkElements).map(lel => ({
-            label: lel.querySelector('.sl-label').value,
-            url: lel.querySelector('.sl-url').value,
-            isHighlighted: lel.querySelector('.sl-highlight').checked
-        }));
+        const links = Array.from(linkElements).map(lel => {
+            const extraElements = lel.querySelectorAll('.slink-extra-item');
+            const extraLinks = Array.from(extraElements).map(eel => ({
+                label: eel.querySelector('.sle-label').value,
+                url: eel.querySelector('.sle-url').value
+            }));
+            return {
+                label: lel.querySelector('.sl-label').value,
+                url: lel.querySelector('.sl-url').value,
+                isHighlighted: lel.querySelector('.sl-highlight').checked,
+                extraLinks: extraLinks
+            };
+        });
         return { title, links };
     });
 
@@ -397,27 +409,37 @@ function addDownloadLink(link = {}) {
             .replace(/"/g, '&quot;');
     };
 
+    const isTutorial = currentKey === 'useful-tutorials';
+    const labelTitle = isTutorial ? 'TUTORIAL TITLE' : 'LINK LABEL (E.G. PART 1)';
+    const labelPlaceholder = isTutorial ? 'E.g. Seamless Zoom In Premiere Pro' : 'Varanasi Official Trailer';
+    const qualityLabel = isTutorial ? 'SOFTWARE / CATEGORY' : 'QUALITY';
+    const qualityPlaceholder = isTutorial ? 'E.g. Premiere Pro' : '1080P HEVC';
+    const sizeLabel = isTutorial ? 'VIDEO DURATION' : 'FILE SIZE';
+    const sizePlaceholder = isTutorial ? 'E.g. 12 mins' : 'e.g. 1.2 GB';
+    const urlLabel = isTutorial ? 'YOUTUBE VIDEO URL' : 'DOWNLOAD URL';
+    const urlPlaceholder = isTutorial ? 'https://www.youtube.com/watch?v=...' : 'https://mega.nz/...';
+
     div.innerHTML = `
         <div class="drag-handle">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
         </div>
         <button type="button" class="remove-btn" onclick="this.parentElement.remove(); if(typeof updatePreview === 'function') updatePreview();">×</button>
         <div class="form-group" style="margin-bottom: 16px;">
-            <label>LINK LABEL (E.G. PART 1)</label>
-            <input type="text" class="form-control dl-label" placeholder="Varanasi Official Trailer" value="${safeVal(link.label)}" oninput="if(typeof updatePreview === 'function') updatePreview()">
+            <label>${labelTitle}</label>
+            <input type="text" class="form-control dl-label" placeholder="${labelPlaceholder}" value="${safeVal(link.label)}" oninput="if(typeof updatePreview === 'function') updatePreview()">
         </div>
         <div class="dlink-grid">
             <div class="form-group" style="margin-bottom: 0;">
-                <label>QUALITY</label>
-                <input type="text" class="form-control dl-quality" placeholder="1080P HEVC" value="${safeVal(link.quality)}" oninput="if(typeof updatePreview === 'function') updatePreview()">
+                <label>${qualityLabel}</label>
+                <input type="text" class="form-control dl-quality" placeholder="${qualityPlaceholder}" value="${safeVal(link.quality)}" oninput="if(typeof updatePreview === 'function') updatePreview()">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <label>FILE SIZE</label>
-                <input type="text" class="form-control dl-size" placeholder="e.g. 1.2 GB" value="${safeVal(link.size)}" oninput="if(typeof updatePreview === 'function') updatePreview()">
+                <label>${sizeLabel}</label>
+                <input type="text" class="form-control dl-size" placeholder="${sizePlaceholder}" value="${safeVal(link.size)}" oninput="if(typeof updatePreview === 'function') updatePreview()">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <label>DOWNLOAD URL</label>
-                <input type="text" class="form-control dl-url" placeholder="https://mega.nz/..." value="${safeVal(link.url)}" oninput="if(typeof updatePreview === 'function') updatePreview()">
+                <label>${urlLabel}</label>
+                <input type="text" class="form-control dl-url" placeholder="${urlPlaceholder}" value="${safeVal(link.url)}" oninput="if(typeof updatePreview === 'function') updatePreview()">
             </div>
         </div>
     `;
@@ -526,14 +548,55 @@ function appendLinkToContainer(container, link = {}) {
                 <input type="text" class="form-control sl-url" style="padding: 8px 12px; font-size: 13px;" placeholder="https://..." value="${safeVal(link.url)}" oninput="if(typeof updatePreview === 'function') updatePreview()">
             </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
             <input type="checkbox" class="sl-highlight" id="${checkboxId}" ${link.isHighlighted ? 'checked' : ''} style="width: 14px; height: 14px; accent-color: var(--accent);" onchange="if(typeof updatePreview === 'function') updatePreview()">
             <label for="${checkboxId}" style="margin: 0; cursor: pointer; color: var(--text-secondary); font-size: 11px; letter-spacing: 0;">Highlight (Red Underline)</label>
         </div>
+
+        <div class="sl-extra-links-container" style="margin-top: 8px; border-top: 1px dashed rgba(102, 34, 186, 0.15); padding-top: 8px;">
+            <!-- Sub-links container -->
+        </div>
+        
+        <button type="button" class="btn btn-outline" style="border-style: dotted; padding: 4px 10px; font-size: 10px; border-radius: 12px; margin-top: 6px; color: var(--text-secondary);" onclick="addExtraLinkRow(this)">
+            + Add Sub-Link (e.g. Mirror, Version 2, etc.)
+        </button>
     `;
     
     container.appendChild(div);
+
+    const extraContainer = div.querySelector('.sl-extra-links-container');
+    const extraLinks = link.extraLinks || [];
+    extraLinks.forEach(ext => appendExtraLinkRow(extraContainer, ext));
 }
+
+window.addExtraLinkRow = function(btn) {
+    const slinkItem = btn.closest('.slink-item');
+    const container = slinkItem.querySelector('.sl-extra-links-container');
+    appendExtraLinkRow(container, {});
+};
+
+window.appendExtraLinkRow = function(container, ext = {}) {
+    const div = document.createElement('div');
+    div.className = 'slink-extra-item';
+    div.style.display = 'flex';
+    div.style.gap = '8px';
+    div.style.marginBottom = '6px';
+    div.style.alignItems = 'center';
+    
+    const safeVal = (str) => {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    };
+
+    div.innerHTML = `
+        <input type="text" class="form-control sle-label" style="padding: 6px 10px; font-size: 12px; width: 100px; display: inline-block;" placeholder="Label (e.g. 2)" value="${safeVal(ext.label)}" oninput="if(typeof updatePreview === 'function') updatePreview()">
+        <input type="text" class="form-control sle-url" style="padding: 6px 10px; font-size: 12px; flex: 1; display: inline-block;" placeholder="Sub-Link URL https://..." value="${safeVal(ext.url)}" oninput="if(typeof updatePreview === 'function') updatePreview()">
+        <button type="button" class="remove-btn" style="position: static; transform: none; width: 18px; height: 18px; line-height: 18px; font-size: 11px; flex-shrink: 0;" onclick="this.parentElement.remove(); if(typeof updatePreview === 'function') updatePreview();">×</button>
+    `;
+    
+    container.appendChild(div);
+    if (typeof updatePreview === 'function') updatePreview();
+};
 
 // Preview & Sortable Logic
 
@@ -573,11 +636,19 @@ function updatePreview() {
     const softwareGroups = Array.from(groupElements).map(el => {
         const title = el.querySelector('.sg-title').value;
         const linkEls = el.querySelectorAll('.slink-item');
-        const links = Array.from(linkEls).map(lel => ({
-            label: lel.querySelector('.sl-label').value,
-            url: lel.querySelector('.sl-url').value,
-            isHighlighted: lel.querySelector('.sl-highlight').checked
-        }));
+        const links = Array.from(linkEls).map(lel => {
+            const extraElements = lel.querySelectorAll('.slink-extra-item');
+            const extraLinks = Array.from(extraElements).map(eel => ({
+                label: eel.querySelector('.sle-label').value,
+                url: eel.querySelector('.sle-url').value
+            }));
+            return {
+                label: lel.querySelector('.sl-label').value,
+                url: lel.querySelector('.sl-url').value,
+                isHighlighted: lel.querySelector('.sl-highlight').checked,
+                extraLinks: extraLinks
+            };
+        });
         return { title, links };
     });
 
@@ -603,7 +674,18 @@ function updatePreview() {
                     const sLabel = link.label ? link.label.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Link';
                     const sUrl = link.url ? link.url.replace(/"/g, '&quot;') : '#';
                     const highlightStyle = link.isHighlighted ? 'color: #6622ba; border-bottom-color: #6622ba;' : '';
-                    html += `<li><a href="${sUrl}" style="${highlightStyle}" target="_blank">${sLabel}</a></li>`;
+                    
+                    let itemHtml = `<a href="${sUrl}" style="${highlightStyle}" target="_blank">${sLabel}</a>`;
+                    
+                    if (link.extraLinks && link.extraLinks.length > 0) {
+                        link.extraLinks.forEach(ext => {
+                            const extLabel = ext.label ? ext.label.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Link';
+                            const extUrl = ext.url ? ext.url.replace(/"/g, '&quot;') : '#';
+                            itemHtml += ` <span style="color: #64748b; margin: 0 4px; font-weight: 500;">/</span> <a href="${extUrl}" style="${highlightStyle}" target="_blank">${extLabel}</a>`;
+                        });
+                    }
+                    
+                    html += `<li>${itemHtml}</li>`;
                 });
             }
             html += `</ul></div>`;

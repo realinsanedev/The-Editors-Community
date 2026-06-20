@@ -38,5 +38,25 @@
         "title": "General Questions",
         "breadcrumb": "Frequently Asked Questions",
         "content": "<div class=\"faq-list\">\n                <div class=\"faq-item\">\n                    <h4>Where can I find free stock videos?</h4>\n                    <p>You can use sites like <a href=\"https://www.pexels.com/videos/\" target=\"_blank\">Pexels</a>, <a href=\"https://mixkit.co/\" target=\"_blank\">Mixkit</a>, or <a href=\"https://www.videvo.net/\" target=\"_blank\">Videvo</a>.</p>\n                </div>\n                <div class=\"faq-item\">\n                    <h4>Where can I find free music and SFX?</h4>\n                    <p>Check out <a href=\"https://studio.youtube.com/\" target=\"_blank\">YouTube Audio Library</a>, <a href=\"https://mixkit.co/free-sound-effects/\" target=\"_blank\">Mixkit Sounds</a>, or <a href=\"https://pixabay.com/music/\" target=\"_blank\">Pixabay Music</a>.</p>\n                </div>\n            </div>"
+    },
+    "useful-tutorials": {
+        "title": "Useful Tutorials",
+        "breadcrumb": "Useful Websites",
+        "content": "<p>A curated directory of top YouTube tutorials for video editors.</p>",
+        "downloadLinks": [
+            {
+                "label": "Seamless Zoom In Premiere Pro",
+                "quality": "Premiere Pro",
+                "size": "8 mins",
+                "url": "https://www.youtube.com/watch?v=zJg13X6lC0Y"
+            },
+            {
+                "label": "3D Camera Tracking in After Effects",
+                "quality": "After Effects",
+                "size": "15 mins",
+                "url": "https://www.youtube.com/watch?v=k-V31Yv6T9Q"
+            }
+        ],
+        "softwareGroups": []
     }
 }

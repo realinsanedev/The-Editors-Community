@@ -471,7 +471,7 @@ app.get('/api/presets', async (req, res) => {
 });
 
 app.post('/api/presets', authenticateUserOptional, upload.single('file'), async (req, res) => {
-    const { title, description, category, platform, externalUrl, platformType } = req.body;
+    const { title, description, category, platform, externalUrl, platformType, previewUrl } = req.body;
     if (!title || !description || !category || !platform) {
         return res.status(400).json({ success: false, message: 'Title, description, category, and platform are required' });
     }
@@ -512,6 +512,7 @@ app.post('/api/presets', authenticateUserOptional, upload.single('file'), async 
             platformType: platformType || 'pc',
             downloadUrl,
             fileName,
+            previewUrl: previewUrl || '',
             authorId,
             authorName,
             authorAvatar,

@@ -10,8 +10,8 @@
     <link rel="dns-prefetch" href="https://res.cloudinary.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="logo.png">
-    <link rel="stylesheet" href="styles.css?v=5">
-    <script src="app.js?v=5" defer></script>
+    <link rel="stylesheet" href="styles.css?v=6">
+    <script src="app.js?v=6" defer></script>
 </head>
 <body>
     <div id="app">
@@ -21,7 +21,9 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h2>Editors Community</h2>
+                <a href="#introduction" style="text-decoration: none; color: inherit;">
+                    <h2>Editors Community</h2>
+                </a>
                 <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close Menu">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
@@ -71,7 +73,10 @@
                     <a href="#vfx-pack" class="nav-link" data-path="vfx-pack">VFX Pack</a>
                     <a href="#sfx-pack" class="nav-link" data-path="sfx-pack">SFX Pack</a>
                     <a href="#calculator" class="nav-link" data-path="calculator">Editing Calculator</a>
+                    <a href="#useful-tutorials" class="nav-link" data-path="useful-tutorials">Useful Tutorials</a>
                 </div>
+
+
 
                 <div class="nav-section">
                     <h3>Frequently Asked Questions</h3>
@@ -95,7 +100,9 @@
                 <button class="menu-toggle-btn" id="menuToggle" aria-label="Toggle Menu">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
-                <span class="mobile-title">Editors Community</span>
+                <a href="#introduction" style="text-decoration: none; color: inherit; display: inline-block;">
+                    <span class="mobile-title">Editors Community</span>
+                </a>
             </div>
             
             <!-- Top Auth Navigation -->
@@ -384,6 +391,10 @@
                 <div class="form-group">
                     <label>Description</label>
                     <textarea id="presetUploadDesc" class="form-control" placeholder="Describe what this preset does and how to use it..." rows="3" style="resize: vertical; min-height: 60px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Preview Image / Video / YouTube URL (Optional)</label>
+                    <input type="text" id="presetUploadPreviewUrl" class="form-control" placeholder="E.g., YouTube link, GIF, or image URL">
                 </div>
 
                 <!-- Platform Type: PC or Mobile -->

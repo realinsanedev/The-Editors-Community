@@ -86,7 +86,7 @@ function updateSidebarVisibility() {
         let visibleLinksCount = 0;
         links.forEach(link => {
             const path = link.getAttribute('data-path');
-            if (path && path !== 'introduction' && path !== 'forum' && path !== 'presets-pc' && path !== 'presets-mobile' && path !== 'calculator' && path !== 'bookmarks' && !data[path]) {
+            if (path && path !== 'introduction' && path !== 'forum' && path !== 'presets-pc' && path !== 'presets-mobile' && path !== 'calculator' && path !== 'bookmarks' && path !== 'useful-tutorials' && !data[path]) {
                 link.style.display = 'none';
             } else {
                 link.style.display = 'block';
@@ -238,6 +238,11 @@ function renderPage() {
         renderBookmarks();
         return;
     }
+    if (hash === 'useful-tutorials') {
+        renderUsefulTutorials();
+        return;
+    }
+
 
     const pageData = data[hash];
 
@@ -269,7 +274,18 @@ function renderPage() {
                     const sLabel = link.label ? link.label.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Link';
                     const sUrl = link.url ? link.url.replace(/"/g, '&quot;') : '#';
                     const highlightStyle = link.isHighlighted ? 'color: #6622ba; border-bottom-color: #6622ba;' : '';
-                    html += `<li><a href="${sUrl}" style="${highlightStyle}" target="_blank">${sLabel}</a></li>`;
+                    
+                    let itemHtml = `<a href="${sUrl}" style="${highlightStyle}" target="_blank">${sLabel}</a>`;
+                    
+                    if (link.extraLinks && link.extraLinks.length > 0) {
+                        link.extraLinks.forEach(ext => {
+                            const extLabel = ext.label ? ext.label.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Link';
+                            const extUrl = ext.url ? ext.url.replace(/"/g, '&quot;') : '#';
+                            itemHtml += ` <span style="color: #64748b; margin: 0 4px; font-weight: 500;">/</span> <a href="${extUrl}" style="${highlightStyle}" target="_blank">${extLabel}</a>`;
+                        });
+                    }
+                    
+                    html += `<li>${itemHtml}</li>`;
                 });
             }
             html += `</ul></div>`;
@@ -916,7 +932,7 @@ async function fetchForums() {
 async function renderForumList(showLoading = true) {
     const container = document.getElementById('content-container');
     if (showLoading) {
-        container.innerHTML = `<div style="padding: 40px; text-align: center;">Loading forums...</div>`;
+        container.innerHTML = getLoadingHTML('Loading forums...');
     }
     
     const forums = await fetchForums();
@@ -975,7 +991,7 @@ async function renderForumPost(postId, showLoading = true) {
     const unsavedReply = replyArea ? replyArea.value : '';
 
     if (showLoading) {
-        container.innerHTML = `<div style="padding: 40px; text-align: center;">Loading post...</div>`;
+        container.innerHTML = getLoadingHTML('Loading post...');
     }
     
     const forums = await fetchForums();
@@ -1231,7 +1247,7 @@ async function fetchPresets() {
 
 async function renderPresetHub(platformType = 'pc') {
     const container = document.getElementById('content-container');
-    container.innerHTML = `<div style="padding: 40px; text-align: center;">Loading presets...</div>`;
+    container.innerHTML = getLoadingHTML('Loading presets...');
 
     const allPresets = await fetchPresets();
 
@@ -1353,8 +1369,40 @@ async function renderPresetHub(platformType = 'pc') {
             // Badge class for category
             const badgeClass = preset.category.toLowerCase().replace(/\//g, '').replace(/\s+/g, '');
 
+            const previewUrl = preset.previewUrl || '';
+            let previewHtml = '';
+            if (previewUrl) {
+                const ytId = getYouTubeId(previewUrl);
+                if (ytId) {
+                    const presetIndex = preset.id;
+                    previewHtml = `
+                        <div class="preset-preview-container" id="preset-preview-${presetIndex}" onclick="playYouTubeEmbed('${ytId}', 'preset-preview-${presetIndex}')">
+                            <img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" alt="${safeTitle}" class="preset-preview-media">
+                            <div class="preset-play-overlay">
+                                <div class="play-btn-circle small">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 1px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if (previewUrl.match(/\.(mp4|webm|ogg)/i) || (previewUrl.includes('res.cloudinary.com') && previewUrl.includes('/video/upload/'))) {
+                    previewHtml = `
+                        <div class="preset-preview-container">
+                            <video src="${previewUrl}" class="preset-preview-media" autoplay muted loop playsinline></video>
+                        </div>
+                    `;
+                } else {
+                    previewHtml = `
+                        <div class="preset-preview-container">
+                            <img src="${previewUrl}" alt="${safeTitle}" class="preset-preview-media" loading="lazy">
+                        </div>
+                    `;
+                }
+            }
+
             html += `
                 <div class="preset-card cat-${catClass}">
+                    ${previewHtml}
                     <div class="preset-card-inner">
                         <div class="preset-badge-row">
                             <span class="preset-badge ${badgeClass}">${preset.category}</span>
@@ -1434,6 +1482,7 @@ function openPresetUploadModal(platformType) {
     document.getElementById('presetUploadLink').value = '';
     document.getElementById('presetUploadFile').value = '';
     document.getElementById('presetFileBoxText').textContent = 'Click to select file (under 2MB)';
+    document.getElementById('presetUploadPreviewUrl').value = '';
     document.getElementById('presetUploadError').style.display = 'none';
 
     // Update platform dropdown based on type
@@ -1505,6 +1554,7 @@ async function handlePresetUpload() {
     const category = document.getElementById('presetUploadCategory').value;
     const platform = document.getElementById('presetUploadPlatform').value;
     const linkVal = document.getElementById('presetUploadLink').value.trim();
+    const previewUrl = document.getElementById('presetUploadPreviewUrl').value.trim();
     const fileInput = document.getElementById('presetUploadFile');
     const err = document.getElementById('presetUploadError');
     const submitBtn = document.getElementById('presetSubmitBtn');
@@ -1521,6 +1571,7 @@ async function handlePresetUpload() {
     formData.append('category', category);
     formData.append('platform', platform);
     formData.append('platformType', presetPlatformType);
+    formData.append('previewUrl', previewUrl);
 
     if (presetUploadSource === 'link') {
         if (!linkVal) {
@@ -1899,6 +1950,7 @@ function renderCalculator() {
                                 <option value="safe80">80% Title Safe Zone</option>
                                 <option value="thirds">Rule of Thirds Grid</option>
                                 <option value="social">9:16 Center Safe (for 16:9 videos)</option>
+                                <option value="tiktok">TikTok / Reels UI Overlay (9:16)</option>
                             </select>
                         </div>
                     </div>
@@ -2054,7 +2106,24 @@ function drawRatioVisualizer() {
     if ((width/height).toFixed(3) === '2.391' || (width/height).toFixed(2) === '2.39') ratioText = '2.39:1 (CinemaScope)';
     else if ((width/height).toFixed(3) === '1.850' || (width/height).toFixed(2) === '1.85') ratioText = '1.85:1 (Flat)';
     
-    results.innerHTML = `Aspect Ratio: <span>${ratioText}</span> (${width} x ${height})`;
+    let cropText = '';
+    if (width / height > 9 / 16) {
+        // Wider than 9:16, show vertical crop offset (9:16 vertical crop)
+        const vCropW = Math.round(height * (9 / 16));
+        const margin = Math.round((width - vCropW) / 2);
+        cropText = `<div style="font-size: 11px; color: #a78bfa; margin-top: 6px; font-weight: 500;">
+            TikTok Crop: <strong>${vCropW} x ${height}</strong> (Crop ${margin}px off left/right sides)
+        </div>`;
+    } else if (width / height < 9 / 16) {
+        // Narrower than 9:16, show top/bottom margins
+        const vCropH = Math.round(width / (9 / 16));
+        const margin = Math.round((height - vCropH) / 2);
+        cropText = `<div style="font-size: 11px; color: #a78bfa; margin-top: 6px; font-weight: 500;">
+            TikTok Fit: <strong>${width} x ${vCropH}</strong> (Crop ${margin}px off top/bottom sides)
+        </div>`;
+    }
+    
+    results.innerHTML = `Aspect Ratio: <span>${ratioText}</span> (${width} x ${height})${cropText}`;
 
     const baseW = 160;
     const baseH = 90;
@@ -2124,6 +2193,69 @@ function drawRatioVisualizer() {
             <rect x="${cropX + cropW}" y="${y}" width="${x + boxW - (cropX + cropW)}" height="${boxH}" fill="#000" opacity="0.65"></rect>
             <rect x="${cropX}" y="${y}" width="${cropW}" height="${boxH}" fill="none" stroke="#22c55e" stroke-width="1"></rect>
             <text x="${cropX + 2}" y="${y + 6}" fill="#22c55e" font-size="3" font-weight="700">9:16 Center Safe</text>
+        `;
+    } else if (overlay === 'tiktok') {
+        let rectX = x;
+        let rectY = y;
+        let rectW = boxW;
+        let rectH = boxH;
+
+        const targetRatio = 9 / 16;
+        if (customRatio > targetRatio) {
+            rectW = boxH * targetRatio;
+            rectX = x + (boxW - rectW) / 2;
+            svgHtml += `
+                <rect x="${x}" y="${y}" width="${rectX - x}" height="${boxH}" fill="#000" opacity="0.65"></rect>
+                <rect x="${rectX + rectW}" y="${y}" width="${x + boxW - (rectX + rectW)}" height="${boxH}" fill="#000" opacity="0.65"></rect>
+            `;
+        } else {
+            rectH = boxW / targetRatio;
+            rectY = y + (boxH - rectH) / 2;
+            svgHtml += `
+                <rect x="${x}" y="${y}" width="${boxW}" height="${rectY - y}" fill="#000" opacity="0.65"></rect>
+                <rect x="${x}" y="${rectY + rectH}" width="${boxW}" height="${y + boxH - (rectY + rectH)}" fill="#000" opacity="0.65"></rect>
+            `;
+        }
+
+        svgHtml += `
+            <rect x="${rectX}" y="${rectY}" width="${rectW}" height="${rectH}" fill="none" stroke="#ef4444" stroke-width="0.8" opacity="0.8"></rect>
+        `;
+
+        const rightAlign = rectX + rectW - 6;
+        const startY = rectY + rectH * 0.4;
+        const gapY = rectH * 0.085;
+        const leftAlign = rectX + 5;
+        const bottomY = rectY + rectH - 18;
+
+        svgHtml += `
+            <!-- Top Tabs -->
+            <text x="${rectX + rectW/2}" y="${rectY + 8}" fill="#ffffff" font-size="3" font-weight="700" text-anchor="middle" opacity="0.8">Following  |  For You</text>
+            
+            <!-- Profile circle -->
+            <circle cx="${rightAlign}" cy="${startY}" r="3.2" fill="#ffffff" opacity="0.9"></circle>
+            <circle cx="${rightAlign}" cy="${startY}" r="2" fill="#6622ba"></circle>
+            
+            <!-- Heart (Like) -->
+            <path d="M ${rightAlign} ${startY + gapY - 1} C ${rightAlign - 2.5} ${startY + gapY - 3} ${rightAlign - 2.5} ${startY + gapY} ${rightAlign} ${startY + gapY + 2} C ${rightAlign + 2.5} ${startY + gapY} ${rightAlign + 2.5} ${startY + gapY - 3} ${rightAlign} ${startY + gapY - 1}" fill="#ef4444" opacity="0.9"></path>
+            <text x="${rightAlign}" y="${startY + gapY + 3.5}" fill="#ffffff" font-size="2" text-anchor="middle" font-weight="700" opacity="0.9">124K</text>
+            
+            <!-- Comment -->
+            <circle cx="${rightAlign}" cy="${startY + gapY * 2}" r="2.2" fill="#ffffff" opacity="0.9"></circle>
+            <path d="M ${rightAlign - 1} ${startY + gapY * 2 + 1} L ${rightAlign - 2} ${startY + gapY * 2 + 3} L ${rightAlign} ${startY + gapY * 2 + 1.8}" fill="#ffffff" opacity="0.9"></path>
+            <text x="${rightAlign}" y="${startY + gapY * 2 + 4.5}" fill="#ffffff" font-size="2" text-anchor="middle" font-weight="700" opacity="0.9">852</text>
+            
+            <!-- Bookmark -->
+            <polygon points="${rightAlign - 1.5},${startY + gapY * 3 - 2} ${rightAlign + 1.5},${startY + gapY * 3 - 2} ${rightAlign + 1.5},${startY + gapY * 3 + 2} ${rightAlign},${startY + gapY * 3 + 0.8} ${rightAlign - 1.5},${startY + gapY * 3 + 2}" fill="#eab308" opacity="0.95"></polygon>
+            <text x="${rightAlign}" y="${startY + gapY * 3 + 4.5}" fill="#ffffff" font-size="2" text-anchor="middle" font-weight="700" opacity="0.9">45K</text>
+            
+            <!-- Share -->
+            <path d="M ${rightAlign - 1} ${startY + gapY * 4 + 1} C ${rightAlign - 1} ${startY + gapY * 4 + 1} ${rightAlign + 1} ${startY + gapY * 4 + 1} ${rightAlign + 1} ${startY + gapY * 4 - 1} L ${rightAlign} ${startY + gapY * 4 - 1} L ${rightAlign + 2} ${startY + gapY * 4 - 3} L ${rightAlign + 4} ${startY + gapY * 4 - 1} L ${rightAlign + 3} ${startY + gapY * 4 - 1} C ${rightAlign + 3} ${startY + gapY * 4 + 2} ${rightAlign - 1} ${startY + gapY * 4 + 2} ${rightAlign - 1} ${startY + gapY * 4 + 1}" fill="#ffffff" opacity="0.9"></path>
+            <text x="${rightAlign}" y="${startY + gapY * 4 + 4.5}" fill="#ffffff" font-size="2" text-anchor="middle" font-weight="700" opacity="0.9">12K</text>
+
+            <!-- Bottom Left Metadata -->
+            <text x="${leftAlign}" y="${bottomY}" fill="#ffffff" font-size="3" font-weight="800" opacity="0.95">@editor_community</text>
+            <text x="${leftAlign}" y="${bottomY + 4}" fill="#ffffff" font-size="2.5" opacity="0.85">Curated resources for video editors #editing</text>
+            <text x="${leftAlign}" y="${bottomY + 8}" fill="#ffffff" font-size="2" opacity="0.75">♫ Original Sound - Editor Community</text>
         `;
     }
 
@@ -2451,4 +2583,201 @@ async function toggleBookmarkItem(type, key, title, url, starBtn) {
         }
     }
 }
+
+function getLoadingHTML(text = 'Loading...') {
+    return `
+        <div class="spinner-container">
+            <div class="spinner"></div>
+            <div class="spinner-text">${text}</div>
+        </div>
+    `;
+}
+
+function getSoftwareClass(software) {
+    if (!software) return '';
+    const name = software.toLowerCase();
+    if (name.includes('after') || name.includes('ae')) return 'ae';
+    if (name.includes('premiere') || name.includes('pr')) return 'pr';
+    if (name.includes('davinci') || name.includes('resolve')) return 'davinci';
+    if (name.includes('blender')) return 'blender';
+    if (name.includes('photoshop') || name.includes('ps')) return 'ps';
+    if (name.includes('capcut')) return 'capcut';
+    if (name.includes('alight')) return 'alight';
+    if (name.includes('vn')) return 'vn';
+    if (name.includes('inshot')) return 'inshot';
+    return '';
+}
+
+function getYouTubeId(url) {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
+
+function renderUsefulTutorials() {
+    const container = document.getElementById('content-container');
+    const pageData = data['useful-tutorials'] || {};
+    const tutorials = pageData.downloadLinks || [];
+
+    // Toggle centered layout
+    container.classList.remove('intro-centered');
+
+    // Update active nav link
+    document.querySelectorAll('.nav-link').forEach(link => {
+        if (link.getAttribute('data-path') === 'useful-tutorials') {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
+
+    let wrapper = document.getElementById('tutorials-page-wrapper');
+    if (!wrapper) {
+        let html = `
+            <div id="tutorials-page-wrapper">
+                <div class="preset-hub-hero">
+                    <span class="preset-hub-platform-pill pc" style="background: rgba(102, 34, 186, 0.25); color: #c4b5fd; border: 1px solid rgba(196, 181, 253, 0.2);">Tutorial Directory</span>
+                    <h1>Master Your Craft</h1>
+                    <p style="color: rgba(255,255,255,0.75); font-size: 14px; margin-top: 6px;">Handpicked, high-quality video tutorials to level up your editing, visual effects, and design skills.</p>
+                </div>
+                
+                <div class="preset-controls-bar">
+                    <div class="preset-search-box">
+                        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 6.5C10 8.433 8.433 10 6.5 10C4.567 10 3 8.433 3 6.5C3 4.567 4.567 3 6.5 3C8.433 3 10 4.567 10 6.5ZM9.30884 10.0159C8.53901 10.6318 7.56251 11 6.5 11C4.01472 11 2 8.98528 2 6.5C2 4.01472 4.01472 2 6.5 2C8.98528 2 11 4.01472 11 6.5C11 7.56251 10.6318 8.53901 10.0159 9.30884L12.8536 12.1464C13.0488 12.3417 13.0488 12.6583 12.8536 12.8536C12.6583 13.0488 12.3417 13.0488 12.1464 12.8536L9.30884 10.0159Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                        <input type="text" id="tutorial-search-input" placeholder="Search tutorials...">
+                    </div>
+                    <div class="preset-filters-bar" id="tutorial-category-filters">
+                        <!-- Dynamic filter buttons -->
+                    </div>
+                </div>
+
+                <div id="tutorials-grid-container">
+                    <!-- Dynamic tutorial cards -->
+                </div>
+            </div>
+        `;
+        container.innerHTML = html;
+        wrapper = document.getElementById('tutorials-page-wrapper');
+
+        const searchInput = document.getElementById('tutorial-search-input');
+        searchInput.addEventListener('input', () => {
+            updateFilteredTutorials(tutorials);
+        });
+    }
+
+    // Populate category filters
+    const categories = ['All', ...new Set(tutorials.map(item => item.quality || 'General').filter(Boolean))];
+    const filtersBar = document.getElementById('tutorial-category-filters');
+    
+    if (!filtersBar.dataset.activeCategory) {
+        filtersBar.dataset.activeCategory = 'All';
+    }
+
+    filtersBar.innerHTML = categories.map(cat => {
+        const isActive = filtersBar.dataset.activeCategory === cat;
+        return `
+            <button class="preset-filter-btn ${isActive ? 'active' : ''}" data-category="${cat}">
+                ${cat}
+            </button>
+        `;
+    }).join('');
+
+    filtersBar.querySelectorAll('.preset-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            filtersBar.querySelectorAll('.preset-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filtersBar.dataset.activeCategory = btn.dataset.category;
+            updateFilteredTutorials(tutorials);
+        });
+    });
+
+    updateFilteredTutorials(tutorials);
+    injectBookmarkStars();
+}
+
+function updateFilteredTutorials(tutorials) {
+    const searchInput = document.getElementById('tutorial-search-input');
+    const filtersBar = document.getElementById('tutorial-category-filters');
+    const gridContainer = document.getElementById('tutorials-grid-container');
+    if (!gridContainer) return;
+
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const activeCategory = filtersBar ? filtersBar.dataset.activeCategory : 'All';
+
+    const filtered = tutorials.filter(item => {
+        const matchesSearch = (item.label || '').toLowerCase().includes(query) ||
+                              (item.quality || '').toLowerCase().includes(query);
+        const matchesCategory = activeCategory === 'All' || (item.quality || 'General') === activeCategory;
+        return matchesSearch && matchesCategory;
+    });
+
+    if (filtered.length === 0) {
+        gridContainer.innerHTML = `<div class="bookmarks-empty" style="margin-top: 40px; text-align: center; width: 100%;">No tutorials match your search or filter criteria.</div>`;
+        return;
+    }
+
+    let html = `
+        <div class="tutorials-grid stagger-in" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; margin-top: 20px;">
+    `;
+
+    filtered.forEach((item, index) => {
+        const label = item.label || 'Tutorial Video';
+        const software = item.quality || 'General';
+        const duration = item.size || 'Video';
+        const url = item.url || '#';
+        const videoId = getYouTubeId(url);
+        const softwareClass = getSoftwareClass(software);
+
+        if (videoId) {
+            html += `
+                <div class="tutorial-card cat-${softwareClass}">
+                    <div class="tutorial-player-container" id="yt-player-container-${index}" onclick="playYouTubeEmbed('${videoId}', 'yt-player-container-${index}')">
+                        <img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" alt="${label}" class="tutorial-thumbnail">
+                        <div class="tutorial-duration-badge">${duration}</div>
+                        <div class="tutorial-play-overlay">
+                            <div class="play-btn-circle">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 2px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tutorial-info">
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
+                            <span class="preset-badge platform ${softwareClass}">${software}</span>
+                        </div>
+                        <h3 class="tutorial-card-title">${label}</h3>
+                        <div style="margin-top: auto; display: flex; gap: 10px; width: 100%;">
+                            <a href="${url}" target="_blank" class="tutorial-watch-btn">
+                                Watch on YouTube
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 2px;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="dlink-card" style="margin-bottom: 0;">
+                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 24px; color: #111;">${label}</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="preset-badge platform ${softwareClass}">${software}</span>
+                        <a href="${url}" target="_blank" class="preset-download-btn">Open Link</a>
+                    </div>
+                </div>
+            `;
+        }
+    });
+
+    html += `</div>`;
+    gridContainer.innerHTML = html;
+}
+
+function playYouTubeEmbed(videoId, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = `
+        <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" style="width: 100%; height: 100%; border: none;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    `;
+}
+
 
