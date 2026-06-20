@@ -1,3 +1,25 @@
+// Theme Toggle Logic
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+    } else {
+        document.body.classList.remove('dark-theme');
+    }
+}
+initTheme();
+
+function toggleTheme() {
+    const isDark = document.body.classList.contains('dark-theme');
+    if (isDark) {
+        document.body.classList.remove('dark-theme');
+        localStorage.setItem('theme', 'light');
+    } else {
+        document.body.classList.add('dark-theme');
+        localStorage.setItem('theme', 'dark');
+    }
+}
+
 // Ctrl+K: Intercept IMMEDIATELY with capture to prevent browser search bar
 document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -242,6 +264,10 @@ function renderPage() {
         renderUsefulTutorials();
         return;
     }
+    if (hash === 'leaderboard') {
+        renderLeaderboard();
+        return;
+    }
 
 
     const pageData = data[hash];
@@ -359,8 +385,69 @@ function renderPaletteResults(query) {
             <div class="search-palette-empty">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: #6622ba; margin-bottom: 16px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 <p>Type to search software, plugins, resources...</p>
+                <p style="font-size: 11px; color: #94a3b8; margin-top: 8px;">Tip: Type <strong>/</strong> for navigation shortcuts</p>
             </div>
         `;
+        return;
+    }
+
+    // Intercept slash commands
+    if (query.startsWith('/')) {
+        const SLASH_COMMANDS = [
+            { name: '/presets-pc', path: 'presets-pc', desc: 'Browse PC presets, transitions, and projects' },
+            { name: '/presets-mobile', path: 'presets-mobile', desc: 'Browse mobile presets, XMLs, and templates' },
+            { name: '/calculator', path: 'calculator', desc: 'Calculate video bitrates and estimated file size' },
+            { name: '/tutorials', path: 'useful-tutorials', desc: 'Watch useful video editing tutorials' },
+            { name: '/forum', path: 'forum', desc: 'Help Forum to ask questions and get help' },
+            { name: '/bookmarks', path: 'bookmarks', desc: 'View your bookmarked presets and resources' },
+            { name: '/leaderboard', path: 'leaderboard', desc: 'View creator ranks and shared presets stats' },
+            { name: '/dashboard', path: 'introduction', desc: 'Go back to dashboard' }
+        ];
+
+        const matched = SLASH_COMMANDS.filter(cmd => 
+            cmd.name.startsWith(query) || 
+            cmd.desc.toLowerCase().includes(query.substring(1))
+        );
+
+        let html = '';
+        if (matched.length > 0) {
+            html += `<div class="search-palette-group-title">Slash Commands</div>`;
+            matched.forEach(cmd => {
+                const index = currentResults.length;
+                currentResults.push({
+                    type: 'command',
+                    key: cmd.path,
+                    title: cmd.name,
+                    subtitle: cmd.desc,
+                    category: 'Command'
+                });
+                html += `
+                    <div class="search-palette-item" data-index="${index}" onclick="handlePaletteSelect(${index})">
+                        <div class="search-palette-item-left">
+                            <div class="search-palette-item-icon">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                            </div>
+                            <div>
+                                <div class="search-palette-item-title" style="color: #6622ba; font-weight: 700;">${cmd.name}</div>
+                                <div class="search-palette-item-desc">${cmd.desc}</div>
+                            </div>
+                        </div>
+                        <span class="search-palette-item-badge">Run</span>
+                    </div>
+                `;
+            });
+        }
+
+        if (currentResults.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="search-palette-empty">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: #6b7280; margin-bottom: 16px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <p>No commands found for "${query}"</p>
+                </div>
+            `;
+        } else {
+            resultsContainer.innerHTML = html;
+        }
         return;
     }
 
@@ -519,7 +606,7 @@ function handlePaletteSelect(index) {
     const item = currentResults[index];
     if (!item) return;
 
-    if (item.type === 'section') {
+    if (item.type === 'section' || item.type === 'command') {
         window.location.hash = '#' + item.key;
         closeSearchPalette();
     } else {
@@ -1281,7 +1368,10 @@ async function renderPresetHub(platformType = 'pc') {
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         Share a Preset
                     </button>
-                    <a href="#${otherHash}" class="preset-hub-switch-btn">${otherLabel}</a>
+                    <div style="display: flex; gap: 8px;">
+                        <a href="#leaderboard" class="preset-hub-switch-btn" style="background: rgba(234, 179, 8, 0.15); color: #facc15; border-color: rgba(234, 179, 8, 0.3);">🏆 Leaderboard</a>
+                        <a href="#${otherHash}" class="preset-hub-switch-btn">${otherLabel}</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1872,6 +1962,111 @@ document.addEventListener('click', (e) => {
    ============================================= */
 let activeCalcTab = 'ratio';
 
+function makeCustomSelectHTML(selectId, options, currentValue, onChangeAttr) {
+    const currentOption = options.find(opt => opt.value === currentValue) || options[0];
+    const triggerText = currentOption ? currentOption.label : '';
+    
+    let optionsHtml = '';
+    options.forEach(opt => {
+        const isSelected = opt.value === currentValue ? 'selected' : '';
+        optionsHtml += `
+            <div class="custom-select-option ${isSelected}" data-value="${opt.value}" 
+                 onclick="selectCustomOption('${selectId}', '${opt.value}', \`${opt.label.replace(/'/g, "\\'")}\`)">
+                ${opt.label}
+            </div>
+        `;
+    });
+    
+    return `
+        <div class="custom-select-wrapper" id="wrapper-${selectId}">
+            <select id="${selectId}" style="display: none;" ${onChangeAttr}>
+                ${options.map(opt => `<option value="${opt.value}" ${opt.value === currentValue ? 'selected' : ''}>${opt.label}</option>`).join('')}
+            </select>
+            <div class="custom-select-trigger" onclick="toggleCustomSelect('wrapper-${selectId}')">
+                <span class="custom-select-text">${triggerText}</span>
+                <svg class="custom-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="custom-select-options">
+                ${optionsHtml}
+            </div>
+        </div>
+    `;
+}
+
+function toggleCustomSelect(wrapperId) {
+    const el = document.getElementById(wrapperId);
+    if (!el) return;
+    
+    // Close other dropdowns
+    document.querySelectorAll('.custom-select-wrapper').forEach(wrapper => {
+        if (wrapper.id !== wrapperId) {
+            wrapper.classList.remove('active');
+        }
+    });
+    
+    el.classList.toggle('active');
+}
+
+function selectCustomOption(selectId, value, labelText) {
+    const selectEl = document.getElementById(selectId);
+    if (!selectEl) return;
+    
+    selectEl.value = value;
+    
+    // Update trigger text
+    const wrapper = document.getElementById('wrapper-' + selectId);
+    if (wrapper) {
+        const textEl = wrapper.querySelector('.custom-select-text');
+        if (textEl) textEl.textContent = labelText;
+        
+        // Update selected class
+        wrapper.querySelectorAll('.custom-select-option').forEach(opt => {
+            if (opt.getAttribute('data-value') === value) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        
+        wrapper.classList.remove('active');
+    }
+    
+    // Trigger onchange event
+    const event = new Event('change', { bubbles: true });
+    selectEl.dispatchEvent(event);
+}
+
+function syncCustomSelect(selectId) {
+    const selectEl = document.getElementById(selectId);
+    if (!selectEl) return;
+    const value = selectEl.value;
+    const wrapper = document.getElementById('wrapper-' + selectId);
+    if (wrapper) {
+        const option = selectEl.querySelector(`option[value="${value}"]`);
+        const labelText = option ? option.textContent : value;
+        
+        const textEl = wrapper.querySelector('.custom-select-text');
+        if (textEl) textEl.textContent = labelText;
+        
+        wrapper.querySelectorAll('.custom-select-option').forEach(opt => {
+            if (opt.getAttribute('data-value') === value) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+    }
+}
+
+// Global click listener to close custom dropdowns
+document.addEventListener('click', (e) => {
+    document.querySelectorAll('.custom-select-wrapper').forEach(wrapper => {
+        if (!wrapper.contains(e.target)) {
+            wrapper.classList.remove('active');
+        }
+    });
+});
+
 function renderCalculator() {
     const container = document.getElementById('content-container');
     
@@ -1923,14 +2118,14 @@ function renderCalculator() {
                     <div class="calc-sidebar">
                         <div class="form-group">
                             <label>Base Format Preset</label>
-                            <select id="ratioPreset" class="form-control" onchange="applyRatioPreset(this.value)">
-                                <option value="1920x1080">16:9 Full HD (1920 x 1080)</option>
-                                <option value="1080x1920">9:16 Vertical TikTok (1080 x 1920)</option>
-                                <option value="1080x1080">1:1 Square (1080 x 1080)</option>
-                                <option value="1080x1350">4:5 Instagram Portrait (1080 x 1350)</option>
-                                <option value="1920x803">2.39:1 CinemaScope (1920 x 803)</option>
-                                <option value="custom">Custom Resolution</option>
-                            </select>
+                            ${makeCustomSelectHTML('ratioPreset', [
+                                { value: '1920x1080', label: '16:9 Full HD (1920 x 1080)' },
+                                { value: '1080x1920', label: '9:16 Vertical TikTok (1080 x 1920)' },
+                                { value: '1080x1080', label: '1:1 Square (1080 x 1080)' },
+                                { value: '1080x1350', label: '4:5 Instagram Portrait (1080 x 1350)' },
+                                { value: '1920x803', label: '2.39:1 CinemaScope (1920 x 803)' },
+                                { value: 'custom', label: 'Custom Resolution' }
+                            ], '1920x1080', 'onchange="applyRatioPreset(this.value)"')}
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                             <div class="form-group">
@@ -1944,14 +2139,14 @@ function renderCalculator() {
                         </div>
                         <div class="form-group">
                             <label>Framing Overlay Guide</label>
-                            <select id="ratioOverlay" class="form-control" onchange="drawRatioVisualizer()">
-                                <option value="none">None (Clean Output)</option>
-                                <option value="safe90">90% Action Safe Zone</option>
-                                <option value="safe80">80% Title Safe Zone</option>
-                                <option value="thirds">Rule of Thirds Grid</option>
-                                <option value="social">9:16 Center Safe (for 16:9 videos)</option>
-                                <option value="tiktok">TikTok / Reels UI Overlay (9:16)</option>
-                            </select>
+                            ${makeCustomSelectHTML('ratioOverlay', [
+                                { value: 'none', label: 'None (Clean Output)' },
+                                { value: 'safe90', label: '90% Action Safe Zone' },
+                                { value: 'safe80', label: '80% Title Safe Zone' },
+                                { value: 'thirds', label: 'Rule of Thirds Grid' },
+                                { value: 'social', label: '9:16 Center Safe (for 16:9 videos)' },
+                                { value: 'tiktok', label: 'TikTok / Reels UI Overlay (9:16)' }
+                            ], 'none', 'onchange="drawRatioVisualizer()"')}
                         </div>
                     </div>
                     <div class="calc-preview-card">
@@ -1969,23 +2164,47 @@ function renderCalculator() {
             <div class="calculator-content-pane ${activeCalcTab === 'size' ? 'active' : ''}" id="pane-size">
                 <div class="grid-2col">
                     <div class="calc-sidebar">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="form-group">
+                                <label>Resolution</label>
+                                ${makeCustomSelectHTML('calcResolution', [
+                                    { value: '1080p', label: '1080p Full HD' },
+                                    { value: '4K', label: '4K UHD' },
+                                    { value: '8K', label: '8K UHD' }
+                                ], '1080p', 'onchange="recalcBitrate()"')}
+                            </div>
+                            <div class="form-group">
+                                <label>Framerate (FPS)</label>
+                                ${makeCustomSelectHTML('calcFps', [
+                                    { value: '23.976', label: '23.976 fps' },
+                                    { value: '24', label: '24 fps (Cinema)' },
+                                    { value: '25', label: '25 fps (PAL)' },
+                                    { value: '29.97', label: '29.97 fps' },
+                                    { value: '30', label: '30 fps' },
+                                    { value: '50', label: '50 fps' },
+                                    { value: '59.94', label: '59.94 fps' },
+                                    { value: '60', label: '60 fps' }
+                                ], '30', 'onchange="recalcBitrate()"')}
+                            </div>
+                        </div>
                         <div class="form-group">
-                            <label>Codec / Bitrate Preset</label>
-                            <select id="sizePreset" class="form-control" onchange="applySizePreset(this.value)">
-                                <option value="12">YouTube 1080p H.264 (~12 Mbps)</option>
-                                <option value="45">YouTube 4K H.264 (~45 Mbps)</option>
-                                <option value="8">Standard Streaming (~8 Mbps)</option>
-                                <option value="220">ProRes 422 HQ 1080p (~220 Mbps)</option>
-                                <option value="330">ProRes 4444 1080p (~330 Mbps)</option>
-                                <option value="custom">Custom Bitrate</option>
-                            </select>
+                            <label>Video Codec</label>
+                            ${makeCustomSelectHTML('calcCodec', [
+                                { value: 'H.264', label: 'H.264 / AVC (Standard Web)' },
+                                { value: 'HEVC', label: 'H.265 / HEVC (Highly Compressed)' },
+                                { value: 'ProRes422HQ', label: 'Apple ProRes 422 HQ (Editing)' },
+                                { value: 'ProRes4444', label: 'Apple ProRes 4444 (Mastering / Alpha)' },
+                                { value: 'DNxHR', label: 'Avid DNxHR HQ (Editing)' },
+                                { value: 'REDCODE', label: 'REDCODE RAW 8:1 (Cinema)' },
+                                { value: 'custom', label: 'Custom Bitrate...' }
+                            ], 'H.264', 'onchange="recalcBitrate()"')}
                         </div>
                         <div class="form-group">
                             <div class="bitrate-display">
                                 <label>Target Bitrate</label>
-                                <span class="bitrate-value-pill" id="bitrateVal">12 Mbps</span>
+                                <span class="bitrate-value-pill" id="bitrateVal">10 Mbps</span>
                             </div>
-                            <input type="range" id="sizeBitrate" min="1" max="500" value="12" class="form-control" oninput="updateSizeBitrate(this.value)">
+                            <input type="range" id="sizeBitrate" min="1" max="1000" value="10" class="form-control" oninput="updateSizeBitrate(this.value, true)">
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
                             <div class="form-group">
@@ -2005,8 +2224,9 @@ function renderCalculator() {
                     <div class="calc-preview-card">
                         <div class="calc-output-card">
                             <div class="calc-output-label">Estimated File Size</div>
-                            <div class="calc-output-val" id="sizeOutput">900 MB</div>
-                            <div class="calc-output-desc">At standard 8 bits per Byte. Actual compression sizes may vary.</div>
+                            <div class="calc-output-val" id="sizeOutput">750 MB</div>
+                            <div class="calc-output-desc" id="dataRateVal">Data Rate: ~1.25 MB/s</div>
+                            <div class="calc-output-desc" style="margin-top: 12px; font-size: 11px; opacity: 0.7;">Actual compression sizes vary. Audio tracks not included.</div>
                         </div>
                     </div>
                 </div>
@@ -2018,16 +2238,16 @@ function renderCalculator() {
                     <div class="calc-sidebar">
                         <div class="form-group">
                             <label>Frame Rate (FPS)</label>
-                            <select id="timecodeFps" class="form-control" onchange="convertTimecodeFields('timecode')">
-                                <option value="23.976">23.976 fps (Film)</option>
-                                <option value="24">24 fps (Standard Cinema)</option>
-                                <option value="25">25 fps (PAL / Europe)</option>
-                                <option value="29.97">29.97 fps (NTSC Broadcast)</option>
-                                <option value="30">30 fps (Standard Web)</option>
-                                <option value="50">50 fps (High Rate PAL)</option>
-                                <option value="59.94">59.94 fps (High Rate Broadcast)</option>
-                                <option value="60">60 fps (Gaming / High FPS)</option>
-                            </select>
+                            ${makeCustomSelectHTML('timecodeFps', [
+                                { value: '23.976', label: '23.976 fps (Film)' },
+                                { value: '24', label: '24 fps (Standard Cinema)' },
+                                { value: '25', label: '25 fps (PAL / Europe)' },
+                                { value: '29.97', label: '29.97 fps (NTSC Broadcast)' },
+                                { value: '30', label: '30 fps (Standard Web)' },
+                                { value: '50', label: '50 fps (High Rate PAL)' },
+                                { value: '59.94', label: '59.94 fps (High Rate Broadcast)' },
+                                { value: '60', label: '60 fps (Gaming / High FPS)' }
+                            ], '30', 'onchange="convertTimecodeFields(\'timecode\')"')}
                         </div>
                         <div class="form-group">
                             <label>Timecode (HH:MM:SS:FF)</label>
@@ -2054,7 +2274,7 @@ function renderCalculator() {
     
     // Draw initial SVG ratio box & init slider
     drawRatioVisualizer();
-    updateSizeBitrate(12);
+    recalcBitrate();
 }
 
 function switchCalcTab(tab) {
@@ -2084,6 +2304,7 @@ function applyRatioPreset(val) {
 
 function calcCustomRatio() {
     document.getElementById('ratioPreset').value = 'custom';
+    syncCustomSelect('ratioPreset');
     drawRatioVisualizer();
 }
 
@@ -2263,22 +2484,69 @@ function drawRatioVisualizer() {
 }
 
 // Size sub-logic
-function applySizePreset(val) {
-    if (val === 'custom') return;
-    document.getElementById('sizeBitrate').value = val;
-    updateSizeBitrate(val);
+function getBitrateForConfig(resVal, codecVal, fpsVal) {
+    const fps = Number(fpsVal) || 30;
+    
+    // Normalize FPS for rough estimation tiers
+    let fpsFactor = fps / 24;
+    
+    if (codecVal === 'H.264') {
+        const base = resVal === '1080p' ? 10 : (resVal === '4K' ? 40 : 80);
+        return Math.round(base * (fps > 45 ? 1.5 : 1));
+    }
+    if (codecVal === 'HEVC') {
+        const base = resVal === '1080p' ? 5 : (resVal === '4K' ? 20 : 40);
+        return Math.round(base * (fps > 45 ? 1.5 : 1));
+    }
+    if (codecVal === 'ProRes422HQ') {
+        const base = resVal === '1080p' ? 176 : (resVal === '4K' ? 707 : 2828);
+        return Math.round(base * fpsFactor);
+    }
+    if (codecVal === 'ProRes4444') {
+        const base = resVal === '1080p' ? 264 : (resVal === '4K' ? 1060 : 4240);
+        return Math.round(base * fpsFactor);
+    }
+    if (codecVal === 'DNxHR') {
+        const base = resVal === '1080p' ? 145 : (resVal === '4K' ? 580 : 2320);
+        return Math.round(base * fpsFactor);
+    }
+    if (codecVal === 'REDCODE') {
+        const base = resVal === '1080p' ? 35 : (resVal === '4K' ? 140 : 560);
+        return Math.round(base * fpsFactor);
+    }
+    return 12; // default fallback
 }
 
-function updateSizeBitrate(val) {
+function recalcBitrate() {
+    const res = document.getElementById('calcResolution').value;
+    const codec = document.getElementById('calcCodec').value;
+    const fps = document.getElementById('calcFps').value;
+    
+    if (codec === 'custom') return;
+    
+    const calculatedBitrate = getBitrateForConfig(res, codec, fps);
+    updateSizeBitrate(calculatedBitrate, false);
+}
+
+function updateSizeBitrate(val, isUserSlide = false) {
     const pill = document.getElementById('bitrateVal');
     if (pill) pill.textContent = val + ' Mbps';
+    
     const slider = document.getElementById('sizeBitrate');
     if (slider) {
         slider.value = val;
-        // Update the visual fill on the range slider
         const pct = ((val - slider.min) / (slider.max - slider.min)) * 100;
         slider.style.setProperty('--range-progress', pct + '%');
     }
+    
+    if (isUserSlide) {
+        const codecSelect = document.getElementById('calcCodec');
+        if (codecSelect) {
+            codecSelect.value = 'custom';
+            syncCustomSelect('calcCodec');
+        }
+    }
+    
     estimateFileSize();
 }
 
@@ -2293,6 +2561,7 @@ function estimateFileSize() {
     const totalMegabytes = totalMegabits / 8;
 
     const sizeOutput = document.getElementById('sizeOutput');
+    const dataRateVal = document.getElementById('dataRateVal');
     if (!sizeOutput) return;
 
     const formatNum = (n) => {
@@ -2301,10 +2570,21 @@ function estimateFileSize() {
         return n.toFixed(1);
     };
 
-    if (totalMegabytes >= 1024) {
+    if (totalMegabytes >= 1024 * 1024) {
+        sizeOutput.textContent = `${formatNum(totalMegabytes / (1024 * 1024))} TB`;
+    } else if (totalMegabytes >= 1024) {
         sizeOutput.textContent = `${formatNum(totalMegabytes / 1024)} GB`;
     } else {
         sizeOutput.textContent = `${formatNum(totalMegabytes)} MB`;
+    }
+
+    if (dataRateVal) {
+        const dataRateMBs = bitrate / 8;
+        if (dataRateMBs >= 1024) {
+            dataRateVal.innerHTML = `Data Rate: <strong>${formatNum(dataRateMBs / 1024)} GB/s</strong> (${bitrate} Mbps)`;
+        } else {
+            dataRateVal.innerHTML = `Data Rate: <strong>${formatNum(dataRateMBs)} MB/s</strong> (${bitrate} Mbps)`;
+        }
     }
 }
 
@@ -2778,6 +3058,219 @@ function playYouTubeEmbed(videoId, containerId) {
     container.innerHTML = `
         <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" style="width: 100%; height: 100%; border: none;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     `;
+}
+
+// Creator Profiles & Leaderboard logic
+async function renderLeaderboard() {
+    const container = document.getElementById('content-container');
+    container.innerHTML = getLoadingHTML('Loading leaderboard...');
+
+    // Toggle centered layout
+    container.classList.remove('intro-centered');
+
+    // Update active nav links (remove active from all sidebar links)
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+
+    const allPresets = await fetchPresets();
+
+    // Group presets by author
+    const creatorsMap = {};
+    allPresets.forEach(preset => {
+        const authorId = preset.authorId || 'anonymous';
+        const authorName = preset.authorName || 'Anonymous';
+        const authorAvatar = preset.authorAvatar || 'https://api.dicebear.com/6.x/initials/svg?seed=Anon';
+        
+        if (!creatorsMap[authorName]) {
+            creatorsMap[authorName] = {
+                authorId: authorId,
+                authorName: authorName,
+                authorAvatar: authorAvatar,
+                totalPresets: 0,
+                totalLikes: 0,
+                totalDownloads: 0,
+                presets: []
+            };
+        }
+        
+        creatorsMap[authorName].totalPresets += 1;
+        creatorsMap[authorName].totalLikes += preset.upvotes ? preset.upvotes.length : 0;
+        creatorsMap[authorName].totalDownloads += preset.downloadsCount || 0;
+        creatorsMap[authorName].presets.push(preset);
+    });
+
+    const creators = Object.values(creatorsMap);
+
+    // Sort creators by totalLikes desc, then totalDownloads desc
+    creators.sort((a, b) => b.totalLikes - a.totalLikes || b.totalDownloads - a.totalDownloads);
+
+    let html = `
+        <div id="leaderboard-page-wrapper">
+            <div class="preset-hub-hero" style="background: linear-gradient(135deg, #1e1b4b, #31105e);">
+                <span class="preset-hub-platform-pill pc" style="background: rgba(234,179,8,0.25); color: #fef08a; border: 1px solid rgba(234,179,8,0.2);">🏆 Contributor Standings</span>
+                <h1>Community Leaderboard</h1>
+                <p style="color: rgba(255,255,255,0.75); font-size: 14px; margin-top: 6px;">Recognizing top preset creators, tools contributors, and asset builders in the Editors Community.</p>
+            </div>
+            
+            <div class="leaderboard-table-container stagger-in" style="margin-top: 30px; background: var(--modal-bg); border-radius: 16px; border: 1px solid var(--card-border); padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); overflow-x: auto;">
+                <table class="leaderboard-table" style="width: 100%; border-collapse: collapse; text-align: left; min-width: 500px;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--sidebar-border); color: var(--text-secondary); font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <th style="padding: 12px 16px; width: 80px; text-align: center;">Rank</th>
+                            <th style="padding: 12px 16px;">Creator</th>
+                            <th style="padding: 12px 16px; text-align: center;">Presets Shared</th>
+                            <th style="padding: 12px 16px; text-align: center;">Total Upvotes</th>
+                            <th style="padding: 12px 16px; text-align: center;">Downloads</th>
+                            <th style="padding: 12px 16px; text-align: center;">Portfolio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+
+    if (creators.length === 0) {
+        html += `
+            <tr>
+                <td colspan="6" style="padding: 40px; text-align: center; color: var(--text-secondary);">No presets shared yet. Be the first to share one!</td>
+            </tr>
+        `;
+    } else {
+        creators.forEach((c, idx) => {
+            const rank = idx + 1;
+            let rankHtml = '';
+            if (rank === 1) {
+                rankHtml = '<span class="rank-badge gold" style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #fef08a; color: #854d0e; font-weight: 800; border: 2.5px solid #eab308; box-shadow: 0 4px 10px rgba(234,179,8,0.25);">1</span>';
+            } else if (rank === 2) {
+                rankHtml = '<span class="rank-badge silver" style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #e2e8f0; color: #475569; font-weight: 800; border: 2.5px solid #cbd5e1; box-shadow: 0 4px 10px rgba(203,213,225,0.25);">2</span>';
+            } else if (rank === 3) {
+                rankHtml = '<span class="rank-badge bronze" style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #ffedd5; color: #9a3412; font-weight: 800; border: 2.5px solid #fdba74; box-shadow: 0 4px 10px rgba(253,186,116,0.25);">3</span>';
+            } else {
+                rankHtml = `<span style="font-weight: 700; color: var(--text-secondary); font-size: 14px;">${rank}</span>`;
+            }
+
+            html += `
+                <tr style="border-bottom: 1px solid var(--sidebar-border); transition: background-color 0.2s;" class="leaderboard-row">
+                    <td style="padding: 16px; text-align: center; vertical-align: middle;">${rankHtml}</td>
+                    <td style="padding: 16px; vertical-align: middle;">
+                        <div style="display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="openCreatorProfile('${encodeURIComponent(c.authorName)}')">
+                            <img src="${c.authorAvatar}" alt="${c.authorName}" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--sidebar-border);">
+                            <div>
+                                <div style="font-weight: 700; color: var(--text-primary); font-size: 14.5px;">${c.authorName}</div>
+                                <div style="font-size: 11.5px; color: var(--text-secondary);">Community Editor</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="padding: 16px; text-align: center; font-weight: 600; color: var(--text-primary); font-size: 14px; vertical-align: middle;">${c.totalPresets}</td>
+                    <td style="padding: 16px; text-align: center; font-weight: 600; color: #ec4899; font-size: 14px; vertical-align: middle;">
+                        <div style="display: inline-flex; align-items: center; gap: 4px;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="color: #ec4899;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            ${c.totalLikes}
+                        </div>
+                    </td>
+                    <td style="padding: 16px; text-align: center; font-weight: 600; color: #a855f7; font-size: 14px; vertical-align: middle;">${c.totalDownloads}</td>
+                    <td style="padding: 16px; text-align: center; vertical-align: middle;">
+                        <button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px; font-weight: 700; border-color: rgba(102, 34, 186, 0.15); color: var(--red-brand);" onclick="openCreatorProfile('${encodeURIComponent(c.authorName)}')">
+                            View Profile
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+async function openCreatorProfile(encodedUsername) {
+    const username = decodeURIComponent(encodedUsername);
+    const modal = document.getElementById('creatorProfileModal');
+    
+    // Reset fields to loading placeholders
+    document.getElementById('creatorFullName').textContent = username;
+    document.getElementById('creatorUsername').textContent = username;
+    document.getElementById('creatorBio').textContent = 'Loading profile details...';
+    document.getElementById('creatorPic').src = 'https://api.dicebear.com/6.x/initials/svg?seed=' + username;
+    document.getElementById('creatorBanner').src = '';
+    document.getElementById('creatorStatPresets').textContent = '-';
+    document.getElementById('creatorStatLikes').textContent = '-';
+    document.getElementById('creatorStatDownloads').textContent = '-';
+    document.getElementById('creatorPortfolioGrid').innerHTML = getLoadingHTML('Loading portfolio...');
+    
+    modal.classList.add('active');
+
+    let publicProfile = null;
+    try {
+        const response = await fetch(API_BASE + `/api/users/public/${username}`);
+        if (response.ok) {
+            const resData = await response.json();
+            if (resData.success) {
+                publicProfile = resData.user;
+            }
+        }
+    } catch (e) {
+        console.warn('Could not fetch public profile from server, using aggregated presets metadata:', e);
+    }
+
+    const allPresets = await fetchPresets();
+    const creatorPresets = allPresets.filter(p => p.authorName === username);
+
+    const totalPresets = creatorPresets.length;
+    let totalLikes = 0;
+    let totalDownloads = 0;
+
+    creatorPresets.forEach(p => {
+        totalLikes += p.upvotes ? p.upvotes.length : 0;
+        totalDownloads += p.downloadsCount || 0;
+    });
+
+    // Populate profile details
+    if (publicProfile) {
+        document.getElementById('creatorFullName').textContent = publicProfile.name || username;
+        document.getElementById('creatorBio').textContent = publicProfile.bio || 'This editor has not added a bio yet.';
+        if (publicProfile.profilePic) {
+            document.getElementById('creatorPic').src = publicProfile.profilePic;
+        }
+        if (publicProfile.profileBanner) {
+            document.getElementById('creatorBanner').src = publicProfile.profileBanner;
+        }
+    } else {
+        document.getElementById('creatorFullName').textContent = username;
+        document.getElementById('creatorBio').textContent = 'Community Preset Contributor.';
+    }
+
+    document.getElementById('creatorStatPresets').textContent = totalPresets;
+    document.getElementById('creatorStatLikes').textContent = totalLikes;
+    document.getElementById('creatorStatDownloads').textContent = totalDownloads;
+
+    // Render presets list in profile modal
+    const grid = document.getElementById('creatorPortfolioGrid');
+    if (creatorPresets.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 20px; text-align: center; color: var(--text-secondary);">No presets shared yet.</div>';
+    } else {
+        grid.innerHTML = creatorPresets.map(preset => {
+            const likesCount = preset.upvotes ? preset.upvotes.length : 0;
+            const downloads = preset.downloadsCount || 0;
+            
+            return `
+                <div class="preset-card" style="border: 1px solid var(--sidebar-border); background: var(--sidebar-bg); border-radius: 12px; overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                    <div style="font-weight: 700; font-size: 13.5px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${preset.title}">${preset.title}</div>
+                    <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 30px;">${preset.description}</div>
+                    <div style="margin-top: auto; display: flex; align-items: center; justify-content: space-between;">
+                        <span class="preset-badge platform ${preset.platform === 'Other' ? 'pc' : preset.platform.toLowerCase().replace(' ', '')}" style="font-size: 9.5px; padding: 3px 6px;">${preset.platform}</span>
+                        <div style="display: flex; gap: 8px; font-size: 11px; color: var(--text-secondary); font-weight: 700;">
+                            <span style="display: flex; align-items: center; gap: 2px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="color: #ec4899;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>${likesCount}</span>
+                            <span style="display: flex; align-items: center; gap: 2px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #a855f7;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>${downloads}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
 }
 
 

@@ -289,6 +289,30 @@ app.get('/api/users/profile', authenticateUser, async (req, res) => {
     }
 });
 
+app.get('/api/users/public/:username', async (req, res) => {
+    try {
+        const userSnap = await db.collection('users').where('username', '==', req.params.username).get();
+        if (userSnap.empty) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        const user = userSnap.docs[0].data();
+        res.json({
+            success: true,
+            user: {
+                id: user.id,
+                username: user.username,
+                name: user.name,
+                bio: user.bio || '',
+                profilePic: user.profilePic || '',
+                profileBanner: user.profileBanner || ''
+            }
+        });
+    } catch (err) {
+        console.error('Error fetching public profile:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 app.post('/api/users/profile', authenticateUser, upload.fields([{ name: 'profilePic', maxCount: 1 }, { name: 'profileBanner', maxCount: 1 }]), async (req, res) => {
     try {
         const userDocRef = db.collection('users').doc(req.userId);
