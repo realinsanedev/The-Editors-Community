@@ -133,6 +133,15 @@ const JWT_SECRET = 'super-secret-jwt-key-for-users'; // In production, use env v
 
 app.use(cors());
 app.use(express.json());
+
+// Set Cache-Control header globally on all API endpoints to prevent stale cached data
+app.use('/api', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+});
+
 app.use(express.static(path.join(__dirname, '..')));
 
 // Middleware to check if database is initialized
