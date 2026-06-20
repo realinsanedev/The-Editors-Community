@@ -781,6 +781,18 @@ app.post('/api/data', async (req, res) => {
     try {
         const newData = req.body;
         await db.collection('site').doc('data').set(newData);
+
+        // Sync Firestore saves to local data.json if running locally (outside Vercel)
+        if (process.env.VERCEL !== '1') {
+            try {
+                const localDataPath = path.join(__dirname, '..', 'data.json');
+                fs.writeFileSync(localDataPath, JSON.stringify(newData, null, 4), 'utf8');
+                console.log('[Firestore Sync] Local data.json successfully updated.');
+            } catch (fsWriteErr) {
+                console.warn('[Firestore Sync] Could not write to local data.json:', fsWriteErr);
+            }
+        }
+
         res.json({ success: true, message: 'Data saved successfully' });
     } catch (err) {
         console.error('Error writing to Firestore site/data:', err);
