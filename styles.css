@@ -4279,14 +4279,13 @@ body.dark-theme .gradient-text {
 }
 
 /* Header Text Upgrades */
-.page-title, .intro-logo h1, .calculator-hero h1 {
+.page-title, .calculator-hero h1 {
     background: linear-gradient(135deg, #1e1b4b 0%, #6622ba 60%, #db2777 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 body.dark-theme .page-title, 
-body.dark-theme .intro-logo h1, 
 body.dark-theme .calculator-hero h1 {
     background: linear-gradient(135deg, #ffffff 0%, #c084fc 50%, #a855f7 100%);
     -webkit-background-clip: text;
