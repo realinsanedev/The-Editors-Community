@@ -1565,3 +1565,102 @@ async function saveCategorySettings() {
         btn.disabled = false;
     }
 }
+
+// ==========================================
+// HOMEPAGE SETTINGS LOGIC
+// ==========================================
+
+function openHomepageSettingsModal() {
+    if (!data.introduction || !data.introduction.content) return;
+    
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(data.introduction.content, 'text/html');
+    
+    // Parse Main Title
+    const h1 = doc.querySelector('.intro-logo h1');
+    document.getElementById('hpTitle').value = h1 ? h1.textContent.trim() : '';
+    
+    // Parse Subtitle
+    const subtitle = doc.querySelector('.intro-subtitle');
+    document.getElementById('hpSubtitle').value = subtitle ? subtitle.textContent.trim() : '';
+    
+    // Parse Category Cards
+    const cards = Array.from(doc.querySelectorAll('.category-card'));
+    const container = document.getElementById('hpCardsContainer');
+    container.innerHTML = '';
+    
+    for (let i = 0; i < 4; i++) {
+        const card = cards[i];
+        const title = card ? (card.querySelector('h3') ? card.querySelector('h3').textContent.trim() : '') : '';
+        const desc = card ? (card.querySelector('p') ? card.querySelector('p').textContent.trim() : '') : '';
+        const link = card ? card.getAttribute('href') : '';
+        
+        container.innerHTML += `
+            <div class="glass-panel" style="padding: 15px; border-radius: 8px;">
+                <h5 style="margin-bottom: 10px;">Card ${i + 1}</h5>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label style="font-size: 11px;">Title</label>
+                    <input type="text" class="form-control" id="hpCardTitle${i}" value="${title.replace(/"/g, '&quot;')}">
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label style="font-size: 11px;">Description</label>
+                    <textarea class="form-control" id="hpCardDesc${i}" rows="2" style="font-size: 12px;">${desc.replace(/</g, '&lt;')}</textarea>
+                </div>
+                <div class="form-group">
+                    <label style="font-size: 11px;">Link (e.g. #forum)</label>
+                    <input type="text" class="form-control" id="hpCardLink${i}" value="${link.replace(/"/g, '&quot;')}">
+                </div>
+            </div>
+        `;
+    }
+    
+    document.getElementById('homepageSettingsModal').classList.add('active');
+}
+
+async function saveHomepageSettings() {
+    const title = document.getElementById('hpTitle').value.trim();
+    const subtitle = document.getElementById('hpSubtitle').value.trim();
+    
+    let cardsHtml = '';
+    for (let i = 0; i < 4; i++) {
+        const cTitle = document.getElementById(`hpCardTitle${i}`).value.trim();
+        const cDesc = document.getElementById(`hpCardDesc${i}`).value.trim();
+        const cLink = document.getElementById(`hpCardLink${i}`).value.trim();
+        
+        if (cTitle || cDesc) {
+            cardsHtml += `
+                <a href="${cLink}" class="category-card">
+                    <h3>${cTitle}</h3>
+                    <p>${cDesc}</p>
+                </a>`;
+        }
+    }
+    
+    const newHtml = `<div class="intro-logo">
+                      <span class="logo-the">the</span> <h1>${title}</h1>
+            </div>
+            <p class="intro-subtitle">${subtitle}</p>
+            
+            <h2 class="category-section-title">Explore by categories</h2>
+            <div class="categories-grid stagger-in">${cardsHtml}
+            </div>`;
+            
+    if (!data.introduction) data.introduction = {};
+    data.introduction.content = newHtml;
+    
+    const btn = document.getElementById('saveHomepageBtn');
+    const originalText = btn.textContent;
+    btn.textContent = 'Saving...';
+    btn.disabled = true;
+    
+    try {
+        await saveData();
+        showToast('Homepage settings saved! Refresh the main site to see changes.');
+        closeModals();
+    } catch (e) {
+        showToast('Error saving homepage settings.', true);
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}
