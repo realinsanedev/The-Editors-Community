@@ -1,44 +1,13 @@
 {
   "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/index.js",
-      "use": "@vercel/node"
+      "source": "/api/:path*",
+      "destination": "/api/index.js"
     },
     {
-      "src": "*.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.css",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.js",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "data.json",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "admin-bg.jpg",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "api/index.js"
-    },
-    {
-      "src": "/admin",
-      "dest": "api/index.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
+      "source": "/admin",
+      "destination": "/api/index.js"
     }
   ]
 }
-
