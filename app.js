@@ -1368,8 +1368,19 @@ async function renderPresetHub(platformType = 'pc') {
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         Share a Preset
                     </button>
-                    <div style="display: flex; gap: 8px;">
-                        <a href="#leaderboard" class="preset-hub-switch-btn" style="background: rgba(234, 179, 8, 0.15); color: #facc15; border-color: rgba(234, 179, 8, 0.3);">🏆 Leaderboard</a>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <a href="#leaderboard" class="btn-premium-prime" style="line-height: 1;">
+                            <svg class="prime-icon" width="14" height="14" viewBox="0 0 24 24" style="vertical-align: middle;">
+                                <defs>
+                                    <linearGradient id="prime-trophy-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stop-color="#ffffff" />
+                                        <stop offset="100%" stop-color="#d8b4fe" />
+                                    </linearGradient>
+                                </defs>
+                                <path d="M3 4c0 0 0 8 9 8s9-8 9-8H3zm5 12c0-2 8-2 8 0v2H8v-2z" fill="url(#prime-trophy-grad)" />
+                            </svg>
+                            <span class="prime-text">Leaderboard</span>
+                        </a>
                         <a href="#${otherHash}" class="preset-hub-switch-btn">${otherLabel}</a>
                     </div>
                 </div>
@@ -3105,8 +3116,19 @@ async function renderLeaderboard() {
 
     let html = `
         <div id="leaderboard-page-wrapper">
-            <div class="preset-hub-hero" style="background: linear-gradient(135deg, #1e1b4b, #31105e);">
-                <span class="preset-hub-platform-pill pc" style="background: rgba(234,179,8,0.25); color: #fef08a; border: 1px solid rgba(234,179,8,0.2);">🏆 Contributor Standings</span>
+            <div class="preset-hub-hero" style="background: linear-gradient(135deg, #160a2b, #220f40); border: 1px solid rgba(139, 92, 246, 0.2); box-shadow: 0 10px 30px rgba(139, 92, 246, 0.08);">
+                <span class="btn-premium-prime" style="pointer-events: none; border-radius: 20px; padding: 6px 14px; font-size: 11.5px; border-width: 1px; box-shadow: 0 0 8px rgba(139,92,246,0.2); margin-bottom: 12px; line-height: 1; align-self: flex-start; max-width: max-content;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" style="vertical-align: middle; margin-right: 4px;">
+                        <defs>
+                            <linearGradient id="prime-trophy-grad-badge" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#ffffff" />
+                                <stop offset="100%" stop-color="#d8b4fe" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M3 4c0 0 0 8 9 8s9-8 9-8H3zm5 12c0-2 8-2 8 0v2H8v-2z" fill="url(#prime-trophy-grad-badge)" />
+                    </svg>
+                    <span class="prime-text" style="font-size: 11px;">Contributor Standings</span>
+                </span>
                 <h1>Community Leaderboard</h1>
                 <p style="color: rgba(255,255,255,0.75); font-size: 14px; margin-top: 6px;">Recognizing top preset creators, tools contributors, and asset builders in the Editors Community.</p>
             </div>
