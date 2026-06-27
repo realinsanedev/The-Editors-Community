@@ -1031,7 +1031,7 @@ async function renderForumList(showLoading = true) {
         <div class="preset-hub-hero" style="background: linear-gradient(135deg, #1b0f2e, #130a21); border: 1px solid rgba(139, 92, 246, 0.15); margin-bottom: 30px;">
             <div class="preset-hub-hero-content">
                 <div>
-                    <div class="preset-hub-platform-pill pc" style="margin-bottom: 12px;">â¦ Forum</div>
+                    <div class="preset-hub-platform-pill pc" style="margin-bottom: 12px;">✦ Forum</div>
                     <h1>Community Help Forum</h1>
                     <p style="color: rgba(255,255,255,0.7);">Ask questions, share tips, and help other editors.</p>
                 </div>
@@ -1351,17 +1351,17 @@ async function renderPresetHub(platformType = 'pc') {
 
     const allPresets = await fetchPresets();
 
-    // Filter by platformType â support old presets that don't have the field (default to 'pc')
+    // Filter by platformType — support old presets that don't have the field (default to 'pc')
     const presets = allPresets.filter(p => (p.platformType || 'pc') === platformType);
 
     const isPCHub = platformType === 'pc';
     const hubLabel = isPCHub ? 'PC Presets' : 'Mobile Presets';
-    const hubIcon = isPCHub ? 'â¦' : 'â¦';
+    const hubIcon = isPCHub ? '✦' : '✦';
     const hubDesc = isPCHub
         ? 'Community presets for After Effects, Premiere Pro, DaVinci Resolve, Blender & more.'
         : 'Community presets for CapCut, Alight Motion, VN Editor, InShot & more.';
     const otherHash = isPCHub ? 'presets-mobile' : 'presets-pc';
-    const otherLabel = isPCHub ? 'â¦ Mobile Presets' : 'â¦ PC Presets';
+    const otherLabel = isPCHub ? '✦ Mobile Presets' : '✦ PC Presets';
 
     // Count per category
     const cats = ['All', 'LUTs', 'Transitions', 'Project Files', 'SFX/Assets'];
@@ -1799,7 +1799,7 @@ function renderStarsContent(avgRating, ratings, presetId) {
         </button>`;
     }
 
-    const displayRating = avgRating > 0 ? avgRating.toFixed(1) : 'â';
+    const displayRating = avgRating > 0 ? avgRating.toFixed(1) : '—';
     return `<div class="stars-row">${starsHtml}</div><span class="rating-info">${displayRating} <span class="rating-count-sm">(${totalRatings})</span></span>`;
 }
 
@@ -2500,7 +2500,7 @@ function drawRatioVisualizer() {
             <!-- Bottom Left Metadata -->
             <text x="${leftAlign}" y="${bottomY}" fill="#ffffff" font-size="3" font-weight="800" opacity="0.95">@editor_community</text>
             <text x="${leftAlign}" y="${bottomY + 4}" fill="#ffffff" font-size="2.5" opacity="0.85">Curated resources for video editors #editing</text>
-            <text x="${leftAlign}" y="${bottomY + 8}" fill="#ffffff" font-size="2" opacity="0.75">â« Original Sound - Editor Community</text>
+            <text x="${leftAlign}" y="${bottomY + 8}" fill="#ffffff" font-size="2" opacity="0.75">♫ Original Sound - Editor Community</text>
         `;
     }
 
@@ -3724,7 +3724,7 @@ async function performSearch(query) {
                         <div class="search-result-icon">${iconSvg}</div>
                         <div>
                             <div class="title">${item.title}</div>
-                            <div class="meta">${item.type.charAt(0).toUpperCase() + item.type.slice(1)} â¢ by ${item.authorName}</div>
+                            <div class="meta">${item.type.charAt(0).toUpperCase() + item.type.slice(1)} • by ${item.authorName}</div>
                         </div>
                     </a>
                 `;
