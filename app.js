@@ -3901,7 +3901,7 @@ async function renderProfile() {
                         <h3>Uploaded Presets</h3>
                         <button class="btn btn-primary" onclick="openModal('userUploadPresetModal')">Upload New Preset</button>
                     </div>
-                    ${myPresets.length === 0 ? '<p style="color: #64748b;">You haven\\'t uploaded any presets yet.</p>' : 
+                    ${myPresets.length === 0 ? '<p style="color: #64748b;">You haven\'t uploaded any presets yet.</p>' : 
                         '<div class="preset-grid">' + myPresets.map(p => `
                             <div class="preset-card">
                                 <h3>${p.title}</h3>
@@ -3914,7 +3914,7 @@ async function renderProfile() {
                 
                 <div id="ptab-showcase" style="display:none;">
                     <h3>Showcase Uploads</h3>
-                    ${myShowcase.length === 0 ? '<p style="color: #64748b;">You haven\\'t posted anything to the showcase yet.</p>' : 
+                    ${myShowcase.length === 0 ? '<p style="color: #64748b;">You haven\'t posted anything to the showcase yet.</p>' : 
                         '<div class="preset-grid">' + myShowcase.map(s => `
                             <div class="preset-card">
                                 <h3>${s.title}</h3>
@@ -3926,7 +3926,7 @@ async function renderProfile() {
                 
                 <div id="ptab-forums" style="display:none;">
                     <h3>Forum Threads</h3>
-                    ${myForums.length === 0 ? '<p style="color: #64748b;">You haven\\'t posted any forum threads yet.</p>' : 
+                    ${myForums.length === 0 ? '<p style="color: #64748b;">You haven\'t posted any forum threads yet.</p>' : 
                         '<div class="forum-list">' + myForums.map(f => `
                             <div class="forum-post-card" onclick="window.location.hash='#forum-post-${f.id}'" style="cursor:pointer; margin-bottom:10px;">
                                 <div class="forum-author-info">
