@@ -1496,3 +1496,72 @@ async function deleteUserAdmin(userId, username) {
         showToast('Network error deleting user.', true);
     }
 }
+
+// ==========================================
+// CATEGORY SETTINGS LOGIC
+// ==========================================
+
+const DEFAULT_CATEGORIES = [
+    "Start Here",
+    "Softwares",
+    "Plugins",
+    "Preset Hub",
+    "Useful Websites",
+    "Frequently Asked Questions"
+];
+
+function openCategorySettingsModal() {
+    const form = document.getElementById('categorySettingsForm');
+    form.innerHTML = '';
+    
+    // Initialize if undefined
+    if (!data._categories) {
+        data._categories = {};
+    }
+    
+    DEFAULT_CATEGORIES.forEach(catId => {
+        const currentName = data._categories[catId] || catId;
+        form.innerHTML += `
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-size: 12px; opacity: 0.8; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Original: ${catId}</label>
+                <input type="text" class="form-control" data-cat-id="${catId}" value="${currentName.replace(/"/g, '&quot;')}">
+            </div>
+        `;
+    });
+    
+    document.getElementById('categorySettingsModal').classList.add('active');
+}
+
+async function saveCategorySettings() {
+    const inputs = document.querySelectorAll('#categorySettingsForm input');
+    
+    if (!data._categories) data._categories = {};
+    
+    inputs.forEach(input => {
+        const catId = input.getAttribute('data-cat-id');
+        const val = input.value.trim();
+        if (val && val !== '') {
+            data._categories[catId] = val;
+        } else {
+            // Revert to default if blank
+            delete data._categories[catId];
+        }
+    });
+    
+    // Disable button to show loading state
+    const btn = document.querySelector('#categorySettingsModal .btn-primary');
+    const originalText = btn.textContent;
+    btn.textContent = 'Saving...';
+    btn.disabled = true;
+    
+    try {
+        await saveData(); // Call existing function
+        showToast('Category settings saved! Refresh the main site to see changes.');
+        closeModals();
+    } catch (e) {
+        showToast('Error saving category settings.', true);
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}

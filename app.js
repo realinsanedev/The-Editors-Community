@@ -45,10 +45,22 @@ function updateSidebarVisibility() {
     // 2. Map existing section header text (lowercase) to their element
     const sections = document.querySelectorAll('.nav-section');
     const sectionMap = {};
+    
+    // Apply custom category names before mapping
+    if (data._categories) {
+        Object.entries(data._categories).forEach(([id, newName]) => {
+            if (newName && newName.trim() !== '') {
+                const h3 = document.querySelector(`.nav-section h3[data-category-id="${id}"]`);
+                if (h3) h3.textContent = newName.trim();
+            }
+        });
+    }
+
     sections.forEach(sec => {
         const h3 = sec.querySelector('h3');
         if (h3) {
-            const text = h3.textContent.trim().toLowerCase();
+            const id = h3.getAttribute('data-category-id') || h3.textContent;
+            const text = id.trim().toLowerCase();
             sectionMap[text] = sec;
         }
     });
