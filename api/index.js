@@ -389,6 +389,7 @@ app.post('/api/forums', authenticateUserOptional, upload.single('image'), async 
         let authorId = null;
         let authorName = 'Anonymous';
         let authorAvatar = 'https://api.dicebear.com/6.x/initials/svg?seed=Anon';
+        let authorRole = 'member';
 
         if (req.userId) {
             const userDoc = await db.collection('users').doc(req.userId).get();
@@ -397,6 +398,7 @@ app.post('/api/forums', authenticateUserOptional, upload.single('image'), async 
                 authorId = user.id;
                 authorName = user.username;
                 authorAvatar = user.profilePic || 'https://api.dicebear.com/6.x/initials/svg?seed=' + user.name;
+                authorRole = user.role || 'member';
             }
         }
 
@@ -411,6 +413,7 @@ app.post('/api/forums', authenticateUserOptional, upload.single('image'), async 
             authorId,
             authorName,
             authorAvatar,
+            authorRole,
             title,
             content,
             imageUrl,
@@ -440,6 +443,7 @@ app.post('/api/forums/:id/reply', authenticateUserOptional, upload.single('image
         let authorId = null;
         let authorName = 'Anonymous';
         let authorAvatar = 'https://api.dicebear.com/6.x/initials/svg?seed=Anon';
+        let authorRole = 'member';
 
         if (req.userId) {
             const userDoc = await db.collection('users').doc(req.userId).get();
@@ -448,6 +452,7 @@ app.post('/api/forums/:id/reply', authenticateUserOptional, upload.single('image
                 authorId = user.id;
                 authorName = user.username;
                 authorAvatar = user.profilePic || 'https://api.dicebear.com/6.x/initials/svg?seed=' + user.name;
+                authorRole = user.role || 'member';
             }
         }
 
@@ -461,6 +466,7 @@ app.post('/api/forums/:id/reply', authenticateUserOptional, upload.single('image
             authorId,
             authorName,
             authorAvatar,
+            authorRole,
             content,
             imageUrl,
             createdAt: new Date().toISOString()
@@ -513,6 +519,7 @@ app.post('/api/presets', authenticateUserOptional, upload.single('file'), async 
         let authorId = null;
         let authorName = 'Anonymous';
         let authorAvatar = 'https://api.dicebear.com/6.x/initials/svg?seed=Anon';
+        let authorRole = 'member';
 
         if (req.userId) {
             const userDoc = await db.collection('users').doc(req.userId).get();
@@ -521,6 +528,7 @@ app.post('/api/presets', authenticateUserOptional, upload.single('file'), async 
                 authorId = user.id;
                 authorName = user.username;
                 authorAvatar = user.profilePic || 'https://api.dicebear.com/6.x/initials/svg?seed=' + user.name;
+                authorRole = user.role || 'member';
             }
         }
 
@@ -549,6 +557,7 @@ app.post('/api/presets', authenticateUserOptional, upload.single('file'), async 
             authorId,
             authorName,
             authorAvatar,
+            authorRole,
             createdAt: new Date().toISOString(),
             upvotes: [],
             downloadsCount: 0
@@ -821,6 +830,315 @@ app.post('/api/data', async (req, res) => {
     } catch (err) {
         console.error('Error writing to Firestore site/data:', err);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// --- SHOWCASE ROUTES ---
+
+app.get('/api/showcase', async (req, res) => {
+    try {
+        const snap = await db.collection('showcase').get();
+        const posts = [];
+        snap.forEach(doc => posts.push(doc.data()));
+        posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        res.json({ success: true, posts });
+    } catch (err) {
+        console.error('Error fetching showcase:', err);
+        res.status(500).json({ success: false, message: 'Server error fetching showcase' });
+    }
+});
+
+app.post('/api/showcase', authenticateUserOptional, async (req, res) => {
+    const { title, description, videoUrl } = req.body;
+    if (!title || !description || !videoUrl) {
+        return res.status(400).json({ success: false, message: 'Title, description, and video URL are required' });
+    }
+
+    try {
+        let authorId = null;
+        let authorName = 'Anonymous';
+        let authorAvatar = 'https://api.dicebear.com/6.x/initials/svg?seed=Anon';
+        let authorRole = 'member';
+
+        if (req.userId) {
+            const userDoc = await db.collection('users').doc(req.userId).get();
+            if (userDoc.exists) {
+                const user = userDoc.data();
+                authorId = user.id;
+                authorName = user.username;
+                authorAvatar = user.profilePic || 'https://api.dicebear.com/6.x/initials/svg?seed=' + user.name;
+                authorRole = user.role || 'member';
+            }
+        }
+
+        const postId = uuidv4();
+        const newPost = {
+            id: postId,
+            authorId,
+            authorName,
+            authorAvatar,
+            authorRole,
+            title,
+            description,
+            videoUrl,
+            createdAt: new Date().toISOString(),
+            upvotes: [],
+            comments: []
+        };
+
+        await db.collection('showcase').doc(postId).set(newPost);
+        res.json({ success: true, post: newPost });
+    } catch (err) {
+        console.error('Error adding showcase post:', err);
+        res.status(500).json({ success: false, message: 'Server error adding showcase post' });
+    }
+});
+
+app.post('/api/showcase/:id/like', authenticateUser, async (req, res) => {
+    try {
+        const postRef = db.collection('showcase').doc(req.params.id);
+        const postDoc = await postRef.get();
+        if (!postDoc.exists) return res.status(404).json({ success: false, message: 'Post not found' });
+
+        const post = postDoc.data();
+        const upvotes = post.upvotes || [];
+        const index = upvotes.indexOf(req.userId);
+
+        const isLiking = index === -1;
+        if (isLiking) {
+            upvotes.push(req.userId);
+            // Notify showcase post author (skip self-likes)
+            if (post.authorId && post.authorId !== req.userId) {
+                const likerDoc = await db.collection('users').doc(req.userId).get();
+                const likerName = likerDoc.exists ? likerDoc.data().username : 'Someone';
+                await createNotification(
+                    post.authorId,
+                    'like',
+                    `${likerName} liked your showcase edit "${post.title}"`,
+                    `#showcase`,
+                    likerName
+                );
+            }
+        } else {
+            upvotes.splice(index, 1);
+        }
+
+        await postRef.update({ upvotes });
+        res.json({ success: true, upvotes });
+    } catch (err) {
+        console.error('Error toggling showcase like:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+app.post('/api/showcase/:id/comment', authenticateUserOptional, async (req, res) => {
+    const { content } = req.body;
+    if (!content) return res.status(400).json({ success: false, message: 'Content is required' });
+
+    try {
+        const postRef = db.collection('showcase').doc(req.params.id);
+        const postDoc = await postRef.get();
+        if (!postDoc.exists) return res.status(404).json({ success: false, message: 'Post not found' });
+
+        const post = postDoc.data();
+
+        let authorId = null;
+        let authorName = 'Anonymous';
+        let authorAvatar = 'https://api.dicebear.com/6.x/initials/svg?seed=Anon';
+        let authorRole = 'member';
+
+        if (req.userId) {
+            const userDoc = await db.collection('users').doc(req.userId).get();
+            if (userDoc.exists) {
+                const user = userDoc.data();
+                authorId = user.id;
+                authorName = user.username;
+                authorAvatar = user.profilePic || 'https://api.dicebear.com/6.x/initials/svg?seed=' + user.name;
+                authorRole = user.role || 'member';
+            }
+        }
+
+        const newComment = {
+            id: uuidv4(),
+            authorId,
+            authorName,
+            authorAvatar,
+            authorRole,
+            content,
+            createdAt: new Date().toISOString()
+        };
+
+        const comments = post.comments || [];
+        comments.push(newComment);
+        await postRef.update({ comments });
+
+        // Notify showcase post author (skip self-replies)
+        if (post.authorId && post.authorId !== req.userId) {
+            await createNotification(
+                post.authorId,
+                'reply',
+                `${authorName} commented on your edit: "${post.title}"`,
+                `#showcase`,
+                authorName
+            );
+        }
+
+        res.json({ success: true, comment: newComment });
+    } catch (err) {
+        console.error('Showcase comment error:', err);
+        res.status(500).json({ success: false, message: 'Server error posting comment' });
+    }
+});
+
+app.delete('/api/showcase/:id', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    const isAdmin = authHeader === `Bearer ${AUTH_TOKEN}`;
+    
+    let tokenUserId = null;
+    if (!isAdmin && authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            tokenUserId = decoded.id;
+        } catch (err) {}
+    }
+
+    try {
+        const postRef = db.collection('showcase').doc(req.params.id);
+        const postDoc = await postRef.get();
+        if (!postDoc.exists) return res.status(404).json({ success: false, message: 'Post not found' });
+
+        const post = postDoc.data();
+        if (isAdmin || (tokenUserId && post.authorId === tokenUserId)) {
+            await postRef.delete();
+            return res.json({ success: true, message: 'Showcase post deleted successfully' });
+        } else {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+    } catch (err) {
+        console.error('Error deleting showcase post:', err);
+        res.status(500).json({ success: false, message: 'Server error deleting showcase post' });
+    }
+});
+
+// --- ADMIN USER MANAGEMENT ROUTES ---
+
+// GET /api/admin/users — list all registered users (admin only)
+app.get('/api/admin/users', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader !== `Bearer ${AUTH_TOKEN}`) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    try {
+        const snap = await db.collection('users').get();
+        const users = [];
+        snap.forEach(doc => {
+            const u = doc.data();
+            // Strip sensitive fields before returning
+            users.push({
+                id: u.id,
+                username: u.username,
+                email: u.email,
+                role: u.role || 'member',
+                banned: u.banned || false,
+                profilePic: u.profilePic || null,
+                createdAt: u.createdAt || null
+            });
+        });
+        res.json({ success: true, users });
+    } catch (err) {
+        console.error('Error listing users:', err);
+        res.status(500).json({ success: false, message: 'Server error listing users' });
+    }
+});
+
+// POST /api/admin/users/:id/ban — ban a user
+app.post('/api/admin/users/:id/ban', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader !== `Bearer ${AUTH_TOKEN}`) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    try {
+        await db.collection('users').doc(req.params.id).update({ banned: true });
+        res.json({ success: true, message: 'User banned' });
+    } catch (err) {
+        console.error('Error banning user:', err);
+        res.status(500).json({ success: false, message: 'Server error banning user' });
+    }
+});
+
+// POST /api/admin/users/:id/unban — unban a user
+app.post('/api/admin/users/:id/unban', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader !== `Bearer ${AUTH_TOKEN}`) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    try {
+        await db.collection('users').doc(req.params.id).update({ banned: false });
+        res.json({ success: true, message: 'User unbanned' });
+    } catch (err) {
+        console.error('Error unbanning user:', err);
+        res.status(500).json({ success: false, message: 'Server error unbanning user' });
+    }
+});
+
+// DELETE /api/admin/users/:id — permanently delete a user
+app.delete('/api/admin/users/:id', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader !== `Bearer ${AUTH_TOKEN}`) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    try {
+        await db.collection('users').doc(req.params.id).delete();
+        res.json({ success: true, message: 'User deleted' });
+    } catch (err) {
+        console.error('Error deleting user:', err);
+        res.status(500).json({ success: false, message: 'Server error deleting user' });
+    }
+});
+
+// --- GLOBAL SEARCH ROUTE ---
+app.get('/api/search', async (req, res) => {
+    const query = (req.query.q || '').toLowerCase().trim();
+    if (!query) return res.json({ success: true, results: [] });
+
+    try {
+        const results = [];
+        
+        // Search Presets
+        const presetsSnap = await db.collection('presets').get();
+        presetsSnap.forEach(doc => {
+            const p = doc.data();
+            if ((p.title||'').toLowerCase().includes(query) || (p.description||'').toLowerCase().includes(query) || (p.authorName||'').toLowerCase().includes(query)) {
+                results.push({ type: 'preset', id: p.id, title: p.title, authorName: p.authorName, route: p.platformType === 'mobile' ? '#presets-mobile' : '#presets-pc', createdAt: p.createdAt });
+            }
+        });
+
+        // Search Showcase
+        const showcaseSnap = await db.collection('showcase').get();
+        showcaseSnap.forEach(doc => {
+            const s = doc.data();
+            if ((s.title||'').toLowerCase().includes(query) || (s.description||'').toLowerCase().includes(query) || (s.authorName||'').toLowerCase().includes(query)) {
+                results.push({ type: 'showcase', id: s.id, title: s.title, authorName: s.authorName, route: '#showcase', createdAt: s.createdAt });
+            }
+        });
+
+        // Search Forums
+        const forumsSnap = await db.collection('forums').get();
+        forumsSnap.forEach(doc => {
+            const f = doc.data();
+            if ((f.title||'').toLowerCase().includes(query) || (f.content||'').toLowerCase().includes(query) || (f.authorName||'').toLowerCase().includes(query)) {
+                results.push({ type: 'forum', id: f.id, title: f.title, authorName: f.authorName, route: `#forum-post-${f.id}`, createdAt: f.createdAt });
+            }
+        });
+
+        // Sort by newest match first
+        results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        res.json({ success: true, results: results.slice(0, 30) });
+    } catch (err) {
+        console.error('Search error:', err);
+        res.status(500).json({ success: false, message: 'Server error during search' });
     }
 });
 

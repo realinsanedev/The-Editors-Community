@@ -40,9 +40,10 @@
                 <div class="nav-section">
                     <h3>Start Here</h3>
                     <a href="#introduction" class="nav-link" data-path="introduction">Dashboard</a>
+                    <a href="#showcase" class="nav-link" data-path="showcase">Showcase Feed</a>
                     <a href="#bookmarks" class="nav-link" data-path="bookmarks">My Bookmarks</a>
+                    <a href="#profile" class="nav-link" id="sidebarProfileLink" style="display: none;">My Profile</a>
                 </div>
-                
                 <div class="nav-section">
                     <h3>Softwares</h3>
                     <a href="#creative-cloud" class="nav-link" data-path="creative-cloud">Creative Cloud</a>
@@ -107,6 +108,10 @@
             
             <!-- Top Auth Navigation -->
             <div class="top-auth-nav">
+                <!-- Search Button -->
+                <button class="theme-toggle-btn" onclick="openModal('searchModal')" aria-label="Search">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
                 <!-- Theme Toggle Button -->
                 <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" aria-label="Toggle Theme">
                     <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.77" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
@@ -136,7 +141,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="authSection" style="display: none;" onclick="openModal('profileModal')">
+                <div id="authSection" style="display: none; cursor:pointer;" onclick="window.location.hash='#profile'">
                     <img id="navProfilePic" src="" alt="Profile" class="nav-avatar">
                     <span id="navUserName" class="nav-username"></span>
                 </div>
@@ -144,6 +149,10 @@
 
 
             <div id="content-container">
+                <!-- Profile Section -->
+                <section id="profile" class="page-section" style="display: none;">
+                    <div id="profileContainer"></div>
+                </section>
                 <!-- Content injected via JS -->
             </div>
 
@@ -477,6 +486,35 @@
         </div>
     </div>
 
+    <!-- Showcase Post Modal -->
+    <div class="modal-overlay" id="showcasePostModal">
+        <div class="modal auth-modal" style="max-width: 500px;">
+            <button class="close-btn" onclick="closeModals()">×</button>
+            <div class="auth-modal-header" style="padding-bottom: 20px;">
+                <h2 style="font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 8px; letter-spacing: -0.02em;">Share Your Edit</h2>
+                <p style="color: #64748b; font-size: 15px; margin: 0;">Post your video edit for feedback from the community.</p>
+            </div>
+            <div style="padding: 16px 24px 20px;">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="showcaseUploadTitle" class="form-control" placeholder="E.g., Gaming Montage - Clean Sync & VFX">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="showcaseUploadDesc" class="form-control" placeholder="Describe your edit, software used, and what feedback you are looking for..." rows="3" style="resize: vertical; min-height: 60px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Video Link (YouTube / Vimeo / Direct MP4 URL)</label>
+                    <input type="text" id="showcaseUploadVideoUrl" class="form-control" placeholder="E.g., https://www.youtube.com/watch?v=...">
+                </div>
+                <div id="showcaseUploadError" class="error-msg"></div>
+                <button class="btn btn-auth-primary" style="margin-top: 24px; width: 100%;" id="showcaseSubmitBtn" onclick="handleShowcaseUpload()">
+                    <span>Post Edit</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Creator Profile Modal -->
     <div class="modal-overlay" id="creatorProfileModal">
         <div class="modal" style="max-width: 600px; padding: 0; max-height: 90vh; overflow-x: hidden; overflow-y: auto;">
@@ -520,6 +558,21 @@
         </div>
     </div>
 
+    <!-- Search Modal -->
+    <div id="searchModal" class="modal">
+        <div class="search-modal-content">
+            <div class="search-input-wrapper">
+                <svg width="20" height="20" fill="none" stroke="#64748b" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="searchInput" placeholder="Search presets, forums, showcase..." onkeyup="performSearch(this.value)">
+                <span class="modal-close" style="position:static; margin-left:10px;" onclick="closeModal('searchModal')">&times;</span>
+            </div>
+            <div class="search-results-container" id="searchResults">
+                <!-- Search results injected here -->
+                <div style="padding: 20px; text-align: center; color: #64748b;">Type to start searching...</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Search Command Palette Modal -->
     <div class="modal-overlay search-palette-overlay" id="searchPaletteModal">
         <div class="search-palette">
@@ -542,5 +595,59 @@
         </div>
     </div>
 
+    <!-- User Upload Preset Modal -->
+    <div id="userUploadPresetModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="modal-close" onclick="closeModal('userUploadPresetModal')">&times;</span>
+            <h2 style="margin-bottom: 20px; font-weight: 700;">Upload Preset</h2>
+            <form id="userUploadPresetForm">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="userPresetTitle" class="form-control" required placeholder="e.g. Cinematic Color Grade">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="userPresetDesc" class="form-control" required placeholder="What does this preset do?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Platform</label>
+                    <select id="userPresetPlatform" class="form-control" required>
+                        <option value="pc">PC (After Effects, Premiere, etc)</option>
+                        <option value="mobile">Mobile (Alight Motion, CapCut, etc)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="userPresetCategory" class="form-control" required>
+                        <option value="Color Correction">Color Correction</option>
+                        <option value="Transitions">Transitions</option>
+                        <option value="Text Effects">Text Effects</option>
+                        <option value="Overlays">Overlays</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Preview Video/Image URL (Optional)</label>
+                    <input type="text" id="userPresetPreview" class="form-control" placeholder="Link to a preview file">
+                </div>
+                <div class="form-group">
+                    <label>Preset File (Upload)</label>
+                    <input type="file" id="userPresetFile" class="form-control">
+                    <small style="color: #64748b; margin-top: 5px; display: block;">Or provide a download link below if the file is too large.</small>
+                </div>
+                <div class="form-group">
+                    <label>External Download Link (Optional)</label>
+                    <input type="url" id="userPresetUrl" class="form-control" placeholder="https://drive.google.com/...">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;" id="userPresetSubmitBtn">Submit Preset</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

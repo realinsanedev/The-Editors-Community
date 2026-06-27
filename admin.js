@@ -144,42 +144,106 @@ function renderCategoryList(filterQuery = '') {
     const list = document.getElementById('categoryList');
     list.innerHTML = '';
 
+    // Build category buckets: { 'Softwares': [{key, title}, ...], ... }
+    const buckets = {};
+    const uncategorised = [];
+
     Object.keys(data).forEach(key => {
-        const title = data[key].title || key;
-        
+        if (key === 'introduction') return; // handled separately as system
+        const sec = data[key];
+        const title = sec.title || key;
+
         if (filterQuery && !title.toLowerCase().includes(filterQuery) && !key.toLowerCase().includes(filterQuery)) {
             return;
         }
 
-        const div = document.createElement('div');
-        div.className = `category-item ${key === currentKey ? 'active' : ''}`;
-        div.textContent = title;
-        div.onclick = () => loadEditor(key);
-        list.appendChild(div);
+        const cat = (sec.breadcrumb && sec.breadcrumb.trim()) ? sec.breadcrumb.trim() : null;
+        if (cat) {
+            if (!buckets[cat]) buckets[cat] = [];
+            buckets[cat].push({ key, title });
+        } else {
+            uncategorised.push({ key, title });
+        }
     });
 
-    // Add special presets manager item
-    const presetTitle = "✦ Manage Presets";
-    if (!filterQuery || presetTitle.toLowerCase().includes(filterQuery)) {
+    // --- System Pages (Introduction) ---
+    const intrSec = data['introduction'];
+    const intrTitle = (intrSec && intrSec.title) ? intrSec.title : 'Introduction';
+    if (!filterQuery || intrTitle.toLowerCase().includes(filterQuery) || 'introduction'.includes(filterQuery)) {
+        const header = document.createElement('div');
+        header.className = 'category-group-header';
+        header.textContent = 'System Pages';
+        list.appendChild(header);
+
         const div = document.createElement('div');
-        div.className = `category-item ${currentKey === '_presets' ? 'active' : ''}`;
-        div.textContent = presetTitle;
-        div.style.borderLeft = '3px solid var(--accent)';
-        div.style.background = currentKey === '_presets' ? 'rgba(102, 34, 186, 0.08)' : '';
-        div.onclick = () => loadEditor('_presets');
+        div.className = `category-item sub-item ${'introduction' === currentKey ? 'active' : ''}`;
+        div.textContent = 'Introduction';
+        div.onclick = () => loadEditor('introduction');
         list.appendChild(div);
     }
 
-    // Add special forums manager item
-    const forumTitle = "✦ Manage Forums";
-    if (!filterQuery || forumTitle.toLowerCase().includes(filterQuery)) {
-        const div = document.createElement('div');
-        div.className = `category-item ${currentKey === '_forums' ? 'active' : ''}`;
-        div.textContent = forumTitle;
-        div.style.borderLeft = '3px solid var(--accent)';
-        div.style.background = currentKey === '_forums' ? 'rgba(102, 34, 186, 0.08)' : '';
-        div.onclick = () => loadEditor('_forums');
-        list.appendChild(div);
+    // --- Categorised Sections ---
+    Object.keys(buckets).sort().forEach(cat => {
+        const pages = buckets[cat];
+        if (pages.length === 0) return;
+
+        const header = document.createElement('div');
+        header.className = 'category-group-header';
+        header.textContent = cat;
+        list.appendChild(header);
+
+        pages.forEach(({ key, title }) => {
+            const div = document.createElement('div');
+            div.className = `category-item sub-item ${key === currentKey ? 'active' : ''}`;
+            div.textContent = title;
+            div.onclick = () => loadEditor(key);
+            list.appendChild(div);
+        });
+    });
+
+    // --- Uncategorised pages ---
+    if (uncategorised.length > 0) {
+        const header = document.createElement('div');
+        header.className = 'category-group-header';
+        header.textContent = 'Uncategorised';
+        list.appendChild(header);
+        uncategorised.forEach(({ key, title }) => {
+            const div = document.createElement('div');
+            div.className = `category-item sub-item ${key === currentKey ? 'active' : ''}`;
+            div.textContent = title;
+            div.onclick = () => loadEditor(key);
+            list.appendChild(div);
+        });
+    }
+
+    // --- Community Panels ---
+    const panelFilter = !filterQuery;
+    const presetTitle = '✦ Manage Presets';
+    const forumTitle  = '✦ Manage Forums';
+    const showcaseTitle = '✦ Manage Showcase';
+    const usersTitle  = '✦ Manage Users';
+
+    const specialPanels = [
+        { key: '_presets',  label: presetTitle },
+        { key: '_forums',   label: forumTitle },
+        { key: '_showcase', label: showcaseTitle },
+        { key: '_users',    label: usersTitle }
+    ].filter(p => !filterQuery || p.label.toLowerCase().includes(filterQuery));
+
+    if (specialPanels.length > 0) {
+        const header = document.createElement('div');
+        header.className = 'category-group-header';
+        header.textContent = 'Community Panels';
+        list.appendChild(header);
+
+        specialPanels.forEach(p => {
+            const div = document.createElement('div');
+            div.className = `category-item sub-item ${currentKey === p.key ? 'active' : ''}`;
+            div.textContent = p.label;
+            div.style.borderLeft = currentKey === p.key ? '3px solid var(--accent)' : '';
+            div.onclick = () => loadEditor(p.key);
+            list.appendChild(div);
+        });
     }
 }
 
@@ -208,7 +272,9 @@ function loadEditor(key) {
         document.getElementById('editorForm').style.display = 'none';
         document.getElementById('presetsManager').style.display = 'none';
         document.getElementById('forumsManager').style.display = 'block';
-        
+        document.getElementById('showcaseManager') && (document.getElementById('showcaseManager').style.display = 'none');
+        document.getElementById('usersManager') && (document.getElementById('usersManager').style.display = 'none');
+
         // Hide live preview panel if open
         const grid = document.querySelector('.editor-grid');
         if (grid && grid.classList.contains('split-mode')) {
@@ -219,8 +285,35 @@ function loadEditor(key) {
         return;
     }
 
+    if (key === '_showcase') {
+        document.getElementById('editorForm').style.display = 'none';
+        document.getElementById('presetsManager').style.display = 'none';
+        document.getElementById('forumsManager').style.display = 'none';
+
+        const grid = document.querySelector('.editor-grid');
+        if (grid && grid.classList.contains('split-mode')) togglePreview();
+
+        // Render a basic showcase posts manager (read from /api/showcase)
+        showSpecialManager('showcaseManager', 'Manage Showcase', loadAdminShowcase);
+        return;
+    }
+
+    if (key === '_users') {
+        document.getElementById('editorForm').style.display = 'none';
+        document.getElementById('presetsManager').style.display = 'none';
+        document.getElementById('forumsManager').style.display = 'none';
+
+        const grid = document.querySelector('.editor-grid');
+        if (grid && grid.classList.contains('split-mode')) togglePreview();
+
+        showSpecialManager('usersManager', 'Manage Users', loadAdminUsers);
+        return;
+    }
+
     document.getElementById('presetsManager').style.display = 'none';
     document.getElementById('forumsManager').style.display = 'none';
+    document.getElementById('showcaseManager') && (document.getElementById('showcaseManager').style.display = 'none');
+    document.getElementById('usersManager') && (document.getElementById('usersManager').style.display = 'none');
     document.getElementById('editorForm').style.display = 'block';
 
     const section = data[key] || {};
@@ -340,9 +433,42 @@ function showToast(message, isError = false) {
 
 // Modal Logic
 function openAddModal() {
+    // Reset fields
     document.getElementById('newSectionId').value = '';
+    document.getElementById('newPageTitle').value = '';
+    document.getElementById('newCategoryTitleInput').value = '';
+    document.getElementById('newCategoryInputWrapper').style.display = 'none';
+
+    // Populate existing categories from breadcrumbs in data
+    const cats = new Set();
+    Object.values(data).forEach(sec => {
+        if (sec.breadcrumb && sec.breadcrumb.trim()) cats.add(sec.breadcrumb.trim());
+    });
+
+    const select = document.getElementById('newSectionCategorySelect');
+    select.innerHTML = '';
+
+    Array.from(cats).sort().forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        select.appendChild(opt);
+    });
+
+    // Add "+ Create New Category" option at end
+    const newOpt = document.createElement('option');
+    newOpt.value = '__new__';
+    newOpt.textContent = '+ Create New Category';
+    select.appendChild(newOpt);
+
     document.getElementById('addModal').classList.add('active');
-    document.getElementById('newSectionId').focus();
+    document.getElementById('newPageTitle').focus();
+}
+
+function toggleNewCategoryInput() {
+    const sel = document.getElementById('newSectionCategorySelect');
+    const wrapper = document.getElementById('newCategoryInputWrapper');
+    wrapper.style.display = sel.value === '__new__' ? 'block' : 'none';
 }
 
 function openDeleteModal() {
@@ -360,16 +486,64 @@ function closeModals() {
 }
 
 document.getElementById('confirmAddBtn').addEventListener('click', () => {
-    let id = document.getElementById('newSectionId').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
-    if (!id) return showToast('Please enter a valid ID', true);
-    if (data[id]) return showToast('This ID already exists', true);
+    const select = document.getElementById('newSectionCategorySelect');
+    const isNewCat = select.value === '__new__';
 
-    data[id] = { title: 'New Section', breadcrumb: 'Category', content: '<p>Content goes here...</p>' };
+    // Resolve the parent category breadcrumb
+    let breadcrumb = '';
+    if (isNewCat) {
+        breadcrumb = document.getElementById('newCategoryTitleInput').value.trim();
+        if (!breadcrumb) return showToast('Please enter a name for the new category.', true);
+    } else {
+        breadcrumb = select.value;
+    }
+
+    // Page title
+    const pageTitle = document.getElementById('newPageTitle').value.trim();
+    if (!pageTitle) return showToast('Please enter a page title.', true);
+
+    // Page ID
+    let id = document.getElementById('newSectionId').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    if (!id) {
+        // Auto-generate from title
+        id = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    }
+    if (!id) return showToast('Please enter a valid Page ID.', true);
+    if (data[id]) return showToast(`A page with ID "${id}" already exists.`, true);
+
+    data[id] = {
+        title: pageTitle,
+        breadcrumb: breadcrumb,
+        content: '<p>Content goes here...</p>',
+        downloadLinks: [],
+        softwareGroups: []
+    };
+
     closeModals();
     loadEditor(id);
-    // Clear search so the new item shows up
     document.getElementById('searchInput').value = '';
     renderCategoryList();
+    showToast(`Page "${pageTitle}" created under ${breadcrumb}!`);
+});
+
+// Auto-fill Page ID from title while typing
+document.addEventListener('DOMContentLoaded', () => {
+    const pageTitleInput = document.getElementById('newPageTitle');
+    const pageIdInput = document.getElementById('newSectionId');
+    if (pageTitleInput && pageIdInput) {
+        pageTitleInput.addEventListener('input', () => {
+            // Only auto-fill if the user hasn't manually typed an ID
+            if (!pageIdInput.dataset.manuallyEdited) {
+                pageIdInput.value = pageTitleInput.value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+            }
+        });
+        pageIdInput.addEventListener('input', () => {
+            pageIdInput.dataset.manuallyEdited = pageIdInput.value ? 'true' : '';
+        });
+    }
 });
 
 document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
@@ -1045,4 +1219,280 @@ async function confirmDeleteForum() {
         showToast('Network error deleting forum post.', true);
     }
     forumIdToDelete = null;
+}
+
+/* =============================================
+   Generic Special Manager Renderer
+   ============================================= */
+function showSpecialManager(containerId, title, loaderFn) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Hide all siblings
+    ['editorForm','presetsManager','forumsManager','showcaseManager','usersManager'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.id !== containerId) el.style.display = 'none';
+    });
+
+    container.style.display = 'block';
+    loaderFn();
+}
+
+/* =============================================
+   Showcase Posts Manager
+   ============================================= */
+let adminShowcasePosts = [];
+
+async function loadAdminShowcase() {
+    const container = document.getElementById('showcaseManager');
+    container.innerHTML = `
+        <div class="presets-header-row">
+            <h2 style="font-size:24px;font-weight:700;color:var(--text-primary);letter-spacing:-0.5px;margin:0;">Manage Showcase Posts</h2>
+            <span style="font-size:13px;color:var(--text-secondary);font-weight:600;" id="showcaseCount">Loading...</span>
+        </div>
+        <div class="presets-filter-bar">
+            <div style="flex-grow:1;">
+                <input type="text" id="showcaseSearchInput" class="form-control" placeholder="Search by title or author..." style="padding:10px 14px;font-size:14px;" oninput="renderAdminShowcaseTable()">
+            </div>
+        </div>
+        <div style="overflow-x:auto;margin-top:20px;border:1px solid var(--border-color);border-radius:12px;background:#fff;">
+            <table class="presets-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Likes</th>
+                        <th>Comments</th>
+                        <th>Date</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="showcaseTableBody">
+                    <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-secondary);">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    try {
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch(`${API_BASE}/api/showcase`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        adminShowcasePosts = json.success ? json.posts : [];
+        document.getElementById('showcaseCount').textContent = `${adminShowcasePosts.length} posts`;
+        renderAdminShowcaseTable();
+    } catch (e) {
+        document.getElementById('showcaseTableBody').innerHTML =
+            `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--danger);">Failed to load showcase posts.</td></tr>`;
+    }
+}
+
+function renderAdminShowcaseTable() {
+    const query = (document.getElementById('showcaseSearchInput')?.value || '').toLowerCase();
+    const tbody = document.getElementById('showcaseTableBody');
+    if (!tbody) return;
+
+    const filtered = adminShowcasePosts.filter(p => {
+        return !query || p.title.toLowerCase().includes(query) || (p.authorName || '').toLowerCase().includes(query);
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-secondary);">No showcase posts found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = '';
+    filtered.forEach(post => {
+        const tr = document.createElement('tr');
+        const date = new Date(post.createdAt).toLocaleDateString();
+        const safeTitle = (post.title || '').replace(/'/g, "\\'");
+        tr.innerHTML = `
+            <td style="font-weight:600;color:var(--text-primary);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${post.title || '—'}</td>
+            <td style="color:var(--text-secondary);">${post.authorName || 'Anonymous'}</td>
+            <td><span class="preset-type-badge pc">♥ ${(post.upvotes||[]).length}</span></td>
+            <td><span class="preset-type-badge pc" style="background:#f1f5f9;color:#475569;">💬 ${(post.comments||[]).length}</span></td>
+            <td style="color:var(--text-secondary);">${date}</td>
+            <td style="text-align:right;">
+                <button class="btn btn-danger" style="padding:6px 12px;font-size:12px;border-radius:6px;"
+                    onclick="deleteShowcasePostAdmin('${post.id}', '${safeTitle}')">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+async function deleteShowcasePostAdmin(postId, title) {
+    if (!confirm(`Delete showcase post "${title}"? This cannot be undone.`)) return;
+    const token = localStorage.getItem('adminToken');
+    try {
+        const res = await fetch(`${API_BASE}/api/showcase/${postId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success) {
+            showToast('Showcase post deleted!');
+            adminShowcasePosts = adminShowcasePosts.filter(p => p.id !== postId);
+            document.getElementById('showcaseCount').textContent = `${adminShowcasePosts.length} posts`;
+            renderAdminShowcaseTable();
+        } else {
+            showToast(json.message || 'Delete failed.', true);
+        }
+    } catch (e) {
+        showToast('Network error deleting showcase post.', true);
+    }
+}
+
+/* =============================================
+   Users Manager
+   ============================================= */
+let adminUsers = [];
+
+async function loadAdminUsers() {
+    const container = document.getElementById('usersManager');
+    container.innerHTML = `
+        <div class="presets-header-row">
+            <h2 style="font-size:24px;font-weight:700;color:var(--text-primary);letter-spacing:-0.5px;margin:0;">Manage Users</h2>
+            <span style="font-size:13px;color:var(--text-secondary);font-weight:600;" id="usersCount">Loading...</span>
+        </div>
+        <div class="presets-filter-bar">
+            <div style="flex-grow:1;">
+                <input type="text" id="usersSearchInput" class="form-control" placeholder="Search by username or email..." style="padding:10px 14px;font-size:14px;" oninput="renderAdminUsersTable()">
+            </div>
+        </div>
+        <div style="overflow-x:auto;margin-top:20px;border:1px solid var(--border-color);border-radius:12px;background:#fff;">
+            <table class="presets-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Joined</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-secondary);">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    try {
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch(`${API_BASE}/api/admin/users`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        adminUsers = json.success ? json.users : [];
+        document.getElementById('usersCount').textContent = `${adminUsers.length} users`;
+        renderAdminUsersTable();
+    } catch (e) {
+        document.getElementById('usersTableBody').innerHTML =
+            `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--danger);">Failed to load users. Check that the /api/admin/users endpoint exists.</td></tr>`;
+    }
+}
+
+function renderAdminUsersTable() {
+    const query = (document.getElementById('usersSearchInput')?.value || '').toLowerCase();
+    const tbody = document.getElementById('usersTableBody');
+    if (!tbody) return;
+
+    const filtered = adminUsers.filter(u => {
+        return !query
+            || (u.username || '').toLowerCase().includes(query)
+            || (u.email || '').toLowerCase().includes(query);
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-secondary);">No users found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = '';
+    filtered.forEach(user => {
+        const tr = document.createElement('tr');
+        const joined = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—';
+        const isBanned = user.banned === true;
+        const roleLabel = user.role || 'member';
+
+        let roleBadgeStyle = 'background:#f1f5f9;color:#475569;';
+        if (roleLabel === 'admin')   roleBadgeStyle = 'background:rgba(102,34,186,0.08);color:var(--accent);';
+        if (roleLabel === 'mod')     roleBadgeStyle = 'background:rgba(16,185,129,0.08);color:var(--success);';
+
+        tr.style.opacity = isBanned ? '0.55' : '1';
+
+        const safeUsername = (user.username || '').replace(/'/g, "\\'");
+        tr.innerHTML = `
+            <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <img src="${user.profilePic || 'https://api.dicebear.com/6.x/initials/svg?seed=' + (user.username||'U')}"
+                        style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border-color);" loading="lazy">
+                    <span style="font-weight:600;color:var(--text-primary);">${user.username || '—'}</span>
+                    ${isBanned ? '<span style="font-size:10px;background:#fee2e2;color:#ef4444;padding:2px 6px;border-radius:4px;font-weight:700;">BANNED</span>' : ''}
+                </div>
+            </td>
+            <td style="color:var(--text-secondary);font-size:13px;">${user.email || '—'}</td>
+            <td><span class="preset-type-badge" style="${roleBadgeStyle}">${roleLabel}</span></td>
+            <td style="color:var(--text-secondary);font-size:13px;">${joined}</td>
+            <td style="text-align:right;">
+                <div style="display:flex;gap:6px;justify-content:flex-end;">
+                    <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;border-radius:6px;"
+                        onclick="toggleBanUser('${user.id}', '${safeUsername}', ${isBanned})">
+                        ${isBanned ? 'Unban' : 'Ban'}
+                    </button>
+                    <button class="btn btn-danger" style="padding:5px 10px;font-size:12px;border-radius:6px;"
+                        onclick="deleteUserAdmin('${user.id}', '${safeUsername}')">Delete</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+async function toggleBanUser(userId, username, isBanned) {
+    const action = isBanned ? 'unban' : 'ban';
+    if (!confirm(`${isBanned ? 'Unban' : 'Ban'} user "${username}"?`)) return;
+
+    const token = localStorage.getItem('adminToken');
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/users/${userId}/${action}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success) {
+            showToast(`User "${username}" has been ${action}ned.`);
+            await loadAdminUsers();
+        } else {
+            showToast(json.message || 'Action failed.', true);
+        }
+    } catch (e) {
+        showToast('Network error.', true);
+    }
+}
+
+async function deleteUserAdmin(userId, username) {
+    if (!confirm(`Permanently delete user "${username}"? This will remove their account and cannot be undone.`)) return;
+
+    const token = localStorage.getItem('adminToken');
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/users/${userId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success) {
+            showToast(`User "${username}" deleted.`);
+            adminUsers = adminUsers.filter(u => u.id !== userId);
+            document.getElementById('usersCount').textContent = `${adminUsers.length} users`;
+            renderAdminUsersTable();
+        } else {
+            showToast(json.message || 'Delete failed.', true);
+        }
+    } catch (e) {
+        showToast('Network error deleting user.', true);
+    }
 }

@@ -228,6 +228,16 @@
                         background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
+        select.form-control {
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 40px;
+        }
+
         .form-control:focus {
             background: #fff;
             border-color: var(--accent);
@@ -566,6 +576,28 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Sidebar Directory Styling */
+        .category-group-header {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 20px 4px 8px 4px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .category-item.sub-item {
+            padding: 8px 12px 8px 24px;
+            font-size: 13.5px;
+            margin-bottom: 4px;
+        }
+        .category-item.sub-item::before {
+            left: 8px;
+            height: 12px;
+        }
     </style>
 </head>
 <body>
@@ -720,6 +752,12 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Showcase Manager container (hidden by default, injected dynamically) -->
+                <div id="showcaseManager" style="display: none;"></div>
+
+                <!-- Users Manager container (hidden by default, injected dynamically) -->
+                <div id="usersManager" style="display: none;"></div>
             </div>
             
             <div class="glass-panel preview-panel-container" style="display: none;" id="previewContainer">
@@ -738,17 +776,39 @@
     <!-- Toast Notification -->
     <div class="toast" id="toast">Changes saved successfully!</div>
 
-    <!-- Add Section Modal -->
+    <!-- Add Section / Page Modal -->
     <div class="modal-overlay" id="addModal">
-        <div class="modal">
-            <h3>Add New Section</h3>
-            <p>Enter a unique identifier (URL hash) for this new section. Use lowercase letters and hyphens only.</p>
-            <div class="form-group">
-                <input type="text" id="newSectionId" class="form-control" placeholder="e.g., new-category-name">
+        <div class="modal" style="max-width: 450px;">
+            <h3>Create New Section / Page</h3>
+            <p>Select what you want to create in the directory hierarchy.</p>
+            
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label>Parent Category (Section)</label>
+                <select id="newSectionCategorySelect" class="form-control" onchange="toggleNewCategoryInput()">
+                    <!-- Populated dynamically with existing categories, plus a "+ Create New Category" option -->
+                </select>
             </div>
+            
+            <!-- Hidden by default, shown when "+ Create New Category" is selected -->
+            <div class="form-group" id="newCategoryInputWrapper" style="display: none; margin-bottom: 16px;">
+                <label>New Category Title</label>
+                <input type="text" id="newCategoryTitleInput" class="form-control" placeholder="e.g. Resources Pack">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label>Page Title (Sub-section)</label>
+                <input type="text" id="newPageTitle" class="form-control" placeholder="e.g. Sound Effects">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label>Page ID (URL Hash)</label>
+                <input type="text" id="newSectionId" class="form-control" placeholder="e.g. sound-effects">
+                <small style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; display: block;">Lowercase letters and hyphens only.</small>
+            </div>
+
             <div class="modal-actions">
                 <button class="btn btn-outline" onclick="closeModals()">Cancel</button>
-                <button class="btn btn-primary" id="confirmAddBtn">Create Section</button>
+                <button class="btn btn-primary" id="confirmAddBtn">Create Page</button>
             </div>
         </div>
     </div>

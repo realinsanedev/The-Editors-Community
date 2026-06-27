@@ -1,20 +1,25 @@
 const fs = require('fs');
-let txt = fs.readFileSync('data.json', 'utf8');
-txt = txt.replace(/\\\"/g, '"');
-txt = txt.replace(/\\n/g, '\n');
-// But wait, if data.json literally has \\" instead of \", that means it has two characters: \ and ".
-// If we replace \\" with \", it might work.
-txt = txt.replace(/\\\\"/g, '\\"');
-txt = txt.replace(/\\\\n/g, '\\n');
+const path = require('path');
 
-txt = txt.replace(/Editors Club/gi, 'Editors Community Test');
-txt = txt.replace(/Editorsclub/gi, 'Editors Community Test');
-txt = txt.replace(/Club<\/span>/gi, 'Community Test</span>');
-
-fs.writeFileSync('data.json', txt);
-try {
-  JSON.parse(txt);
-  console.log('Fixed JSON successfully!');
-} catch(e) {
-  console.error('Still invalid:', e);
+function fixFileEncoding(filename) {
+    const filePath = path.join(__dirname, filename);
+    if (!fs.existsSync(filePath)) return;
+    
+    // Read the raw buffer
+    let buffer = fs.readFileSync(filePath);
+    
+    // Convert buffer to string, ignoring null bytes that PowerShell might have added
+    let content = '';
+    for (let i = 0; i < buffer.length; i++) {
+        if (buffer[i] !== 0x00) {
+            content += String.fromCharCode(buffer[i]);
+        }
+    }
+    
+    // Write back as standard UTF-8
+    fs.writeFileSync(filePath, content, 'utf8');
+    console.log('Fixed encoding for ' + filename);
 }
+
+fixFileEncoding('styles.css');
+fixFileEncoding('app.js');
