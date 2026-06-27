@@ -108,7 +108,7 @@ function updateSidebarVisibility() {
         let visibleLinksCount = 0;
         links.forEach(link => {
             const path = link.getAttribute('data-path');
-            if (path && path !== 'introduction' && path !== 'forum' && path !== 'presets-pc' && path !== 'presets-mobile' && path !== 'calculator' && path !== 'bookmarks' && path !== 'useful-tutorials' && !data[path]) {
+            if (path && path !== 'introduction' && path !== 'forum' && path !== 'presets-pc' && path !== 'presets-mobile' && path !== 'calculator' && path !== 'bookmarks' && path !== 'useful-tutorials' && path !== 'showcase' && !data[path]) {
                 link.style.display = 'none';
             } else {
                 link.style.display = 'block';
@@ -258,6 +258,10 @@ function renderPage() {
     }
     if (hash === 'bookmarks') {
         renderBookmarks();
+        return;
+    }
+    if (hash === 'showcase') {
+        renderShowcase();
         return;
     }
     if (hash === 'useful-tutorials') {
@@ -1018,38 +1022,45 @@ async function fetchForums() {
 
 async function renderForumList(showLoading = true) {
     const container = document.getElementById('content-container');
-    if (showLoading) {
-        container.innerHTML = getLoadingHTML('Loading forums...');
-    }
+    container.innerHTML = getLoadingHTML('Loading forums...');
     
     const forums = await fetchForums();
     lastForumsJSON = JSON.stringify(forums);
     
     let html = `
-        <div class="forum-header">
-            <div>
-                <h1 class="page-title">Community Help Forum</h1>
-                <p style="color: #64748b;">Ask questions, share tips, and help other editors.</p>
+        <div class="preset-hub-hero" style="background: linear-gradient(135deg, #1b0f2e, #130a21); border: 1px solid rgba(139, 92, 246, 0.15); margin-bottom: 30px;">
+            <div class="preset-hub-hero-content">
+                <div>
+                    <div class="preset-hub-platform-pill pc" style="margin-bottom: 12px;">â¦ Forum</div>
+                    <h1>Community Help Forum</h1>
+                    <p style="color: rgba(255,255,255,0.7);">Ask questions, share tips, and help other editors.</p>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-end;">
+                    <button class="preset-hub-share-btn" onclick="openModal('forumPostModal')" style="font-size: 15px; padding: 12px 24px; box-shadow: 0 4px 15px rgba(102, 34, 186, 0.4);">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:inline; margin-bottom:-4px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Create Post
+                    </button>
+                </div>
             </div>
-            <button class="btn btn-primary" onclick="openModal('forumPostModal')">Create Post</button>
         </div>
     `;
 
     if (forums.length === 0) {
-        html += `<div style="text-align: center; padding: 40px; background: #f8fafc; border-radius: 12px; color: #64748b;">No posts yet. Be the first to ask a question!</div>`;
+        html += `<div class="empty-state" style="text-align: center; padding: 40px; background: #f8fafc; border-radius: 12px; color: #64748b;">No posts yet. Be the first to ask a question!</div>`;
     } else {
         html += `<div class="forum-list stagger-in">`;
         forums.forEach(post => {
             const dateStr = new Date(post.createdAt).toLocaleDateString();
             const safeTitle = post.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const safeContent = post.content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const authorRole = post.authorRole || 'member';
             
             html += `
                 <div class="forum-post-card" onclick="window.location.hash = 'forum-post-${post.id}'">
                     <div class="forum-post-header">
-                        <img src="${post.authorAvatar.startsWith('http') ? post.authorAvatar : API_BASE + post.authorAvatar}" class="forum-avatar" loading="lazy">
+                        <img src="${post.authorAvatar && post.authorAvatar.startsWith('http') ? post.authorAvatar : API_BASE + (post.authorAvatar || '/avatar.png')}" class="forum-avatar" loading="lazy">
                         <div>
-                            <div class="forum-author">${post.authorName}</div>
+                            <div class="forum-author">${post.authorName} ${getRoleBadgeHtml(authorRole)}</div>
                             <div class="forum-date">${dateStr}</div>
                         </div>
                     </div>
@@ -1093,15 +1104,16 @@ async function renderForumPost(postId, showLoading = true) {
     const dateStr = new Date(post.createdAt).toLocaleString();
     const safeTitle = post.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const safeContent = post.content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const authorRole = post.authorRole || 'member';
 
     let html = `
         <a href="#forum" style="color: #64748b; text-decoration: none; display: inline-block; margin-bottom: 24px;">&larr; Back to Forum</a>
         
         <div class="thread-original-post">
             <div class="forum-post-header">
-                <img src="${post.authorAvatar.startsWith('http') ? post.authorAvatar : API_BASE + post.authorAvatar}" class="forum-avatar" loading="lazy">
+                <img src="${post.authorAvatar && post.authorAvatar.startsWith('http') ? post.authorAvatar : API_BASE + (post.authorAvatar || '/avatar.png')}" class="forum-avatar" loading="lazy">
                 <div>
-                    <div class="forum-author">${post.authorName}</div>
+                    <div class="forum-author">${post.authorName} ${getRoleBadgeHtml(authorRole)}</div>
                     <div class="forum-date">${dateStr}</div>
                 </div>
             </div>
@@ -1118,12 +1130,13 @@ async function renderForumPost(postId, showLoading = true) {
     post.replies.forEach(reply => {
         const rDate = new Date(reply.createdAt).toLocaleString();
         const rContent = reply.content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const rRole = reply.authorRole || 'member';
         html += `
             <div class="reply-bubble">
-                <img src="${reply.authorAvatar.startsWith('http') ? reply.authorAvatar : API_BASE + reply.authorAvatar}" class="forum-avatar" loading="lazy">
+                <img src="${reply.authorAvatar && reply.authorAvatar.startsWith('http') ? reply.authorAvatar : API_BASE + (reply.authorAvatar || '/avatar.png')}" class="forum-avatar" loading="lazy">
                 <div class="reply-content-box">
                     <div class="reply-header">
-                        <div class="forum-author">${reply.authorName}</div>
+                        <div class="forum-author">${reply.authorName} ${getRoleBadgeHtml(rRole)}</div>
                         <div class="forum-date">${rDate}</div>
                     </div>
                     <div class="reply-text">${rContent}</div>
@@ -1338,17 +1351,17 @@ async function renderPresetHub(platformType = 'pc') {
 
     const allPresets = await fetchPresets();
 
-    // Filter by platformType — support old presets that don't have the field (default to 'pc')
+    // Filter by platformType â support old presets that don't have the field (default to 'pc')
     const presets = allPresets.filter(p => (p.platformType || 'pc') === platformType);
 
     const isPCHub = platformType === 'pc';
     const hubLabel = isPCHub ? 'PC Presets' : 'Mobile Presets';
-    const hubIcon = isPCHub ? '✦' : '✦';
+    const hubIcon = isPCHub ? 'â¦' : 'â¦';
     const hubDesc = isPCHub
         ? 'Community presets for After Effects, Premiere Pro, DaVinci Resolve, Blender & more.'
         : 'Community presets for CapCut, Alight Motion, VN Editor, InShot & more.';
     const otherHash = isPCHub ? 'presets-mobile' : 'presets-pc';
-    const otherLabel = isPCHub ? '✦ Mobile Presets' : '✦ PC Presets';
+    const otherLabel = isPCHub ? 'â¦ Mobile Presets' : 'â¦ PC Presets';
 
     // Count per category
     const cats = ['All', 'LUTs', 'Transitions', 'Project Files', 'SFX/Assets'];
@@ -1512,7 +1525,7 @@ async function renderPresetHub(platformType = 'pc') {
                         <h3 class="preset-title">${safeTitle}</h3>
                         <p class="preset-desc">${safeDesc}</p>
                         <div class="preset-author-section">
-                            <img src="${preset.authorAvatar.startsWith('http') ? preset.authorAvatar : API_BASE + preset.authorAvatar}" class="preset-author-avatar" loading="lazy">
+                            <img src="${preset.authorAvatar && preset.authorAvatar.startsWith('http') ? preset.authorAvatar : API_BASE + (preset.authorAvatar || '/avatar.png')}" class="preset-author-avatar" loading="lazy">
                             <div class="preset-author-info">
                                 <div class="preset-author-name">${preset.authorName}</div>
                                 <div class="preset-date">${dateStr}</div>
@@ -1786,7 +1799,7 @@ function renderStarsContent(avgRating, ratings, presetId) {
         </button>`;
     }
 
-    const displayRating = avgRating > 0 ? avgRating.toFixed(1) : '—';
+    const displayRating = avgRating > 0 ? avgRating.toFixed(1) : 'â';
     return `<div class="stars-row">${starsHtml}</div><span class="rating-info">${displayRating} <span class="rating-count-sm">(${totalRatings})</span></span>`;
 }
 
@@ -2487,7 +2500,7 @@ function drawRatioVisualizer() {
             <!-- Bottom Left Metadata -->
             <text x="${leftAlign}" y="${bottomY}" fill="#ffffff" font-size="3" font-weight="800" opacity="0.95">@editor_community</text>
             <text x="${leftAlign}" y="${bottomY + 4}" fill="#ffffff" font-size="2.5" opacity="0.85">Curated resources for video editors #editing</text>
-            <text x="${leftAlign}" y="${bottomY + 8}" fill="#ffffff" font-size="2" opacity="0.75">♫ Original Sound - Editor Community</text>
+            <text x="${leftAlign}" y="${bottomY + 8}" fill="#ffffff" font-size="2" opacity="0.75">â« Original Sound - Editor Community</text>
         `;
     }
 
@@ -3295,4 +3308,743 @@ async function openCreatorProfile(encodedUsername) {
     }
 }
 
+/* =============================================
+   Showcase Video Feed & Comments Logic
+   ============================================= */
 
+async function fetchShowcases() {
+    try {
+        const res = await fetch(API_BASE + '/api/showcase');
+        const data = await res.json();
+        return data.success ? data.posts : [];
+    } catch (e) {
+        console.error("Error fetching showcases:", e);
+        return [];
+    }
+}
+
+function openShowcaseUploadModal() {
+    openModal('showcasePostModal');
+    document.getElementById('showcaseUploadTitle').value = '';
+    document.getElementById('showcaseUploadDesc').value = '';
+    document.getElementById('showcaseUploadVideoUrl').value = '';
+    document.getElementById('showcaseUploadError').style.display = 'none';
+}
+
+async function handleShowcaseUpload() {
+    const title = document.getElementById('showcaseUploadTitle').value.trim();
+    const description = document.getElementById('showcaseUploadDesc').value.trim();
+    const videoUrl = document.getElementById('showcaseUploadVideoUrl').value.trim();
+    const err = document.getElementById('showcaseUploadError');
+    const submitBtn = document.getElementById('showcaseSubmitBtn');
+
+    if (!title || !description || !videoUrl) {
+        err.textContent = "Title, description, and video URL are required.";
+        err.style.display = 'block';
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.querySelector('span').textContent = 'Posting...';
+
+    const token = localStorage.getItem('userToken');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+        const res = await fetch(API_BASE + '/api/showcase', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ title, description, videoUrl })
+        });
+        const d = await res.json();
+        if (d.success) {
+            closeModals();
+            renderShowcase();
+        } else {
+            err.textContent = d.message;
+            err.style.display = 'block';
+        }
+    } catch (e) {
+        err.textContent = "Network error while uploading showcase post.";
+        err.style.display = 'block';
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.querySelector('span').textContent = 'Post Edit';
+    }
+}
+
+async function likeShowcasePost(postId, btn) {
+    if (!currentUser) {
+        openModal('loginModal');
+        return;
+    }
+
+    const token = localStorage.getItem('userToken');
+    try {
+        const res = await fetch(API_BASE + `/api/showcase/${postId}/like`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        const d = await res.json();
+        if (d.success) {
+            const isLiked = d.upvotes.includes(currentUser.id);
+            btn.classList.toggle('liked', isLiked);
+            btn.querySelector('svg').setAttribute('fill', isLiked ? 'currentColor' : 'none');
+            btn.querySelector('.showcase-like-count').textContent = d.upvotes.length;
+        }
+    } catch (e) {
+        console.error("Error liking showcase post:", e);
+    }
+}
+
+function toggleShowcaseComments(postId) {
+    const commentsSec = document.getElementById(`showcase-comments-${postId}`);
+    if (commentsSec) {
+        commentsSec.classList.toggle('open');
+    }
+}
+
+async function submitShowcaseComment(postId, inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const content = input.value.trim();
+    if (!content) return;
+
+    const token = localStorage.getItem('userToken');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+        const res = await fetch(API_BASE + `/api/showcase/${postId}/comment`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ content })
+        });
+        const d = await res.json();
+        if (d.success) {
+            input.value = '';
+            
+            // Remove 'no comments yet' text if present
+            const commentsSec = document.getElementById(`showcase-comments-${postId}`);
+            const noComments = commentsSec ? commentsSec.querySelector('.showcase-no-comments') : null;
+            if (noComments) {
+                noComments.remove();
+            }
+
+            // Refresh showcase comments list in-place
+            const commentsList = document.getElementById(`showcase-comments-list-${postId}`);
+            if (commentsList) {
+                const comment = d.comment;
+                const avatar = comment.authorAvatar;
+                const bubble = document.createElement('div');
+                bubble.className = 'showcase-comment-bubble';
+                bubble.innerHTML = `
+                    <img src="${avatar.startsWith('http') ? avatar : API_BASE + avatar}" class="showcase-comment-avatar">
+                    <div class="showcase-comment-body">
+                        <div class="showcase-comment-author">${comment.authorName}</div>
+                        <div class="showcase-comment-text">${parseCommentTimestamps(comment.content, postId)}</div>
+                    </div>
+                `;
+                commentsList.appendChild(bubble);
+                commentsList.scrollTop = commentsList.scrollHeight;
+
+                // Update comments count on card
+                const countBadge = document.querySelector(`.showcase-comment-count[data-post-id="${postId}"]`);
+                if (countBadge) {
+                    const currentCount = parseInt(countBadge.textContent) || 0;
+                    countBadge.textContent = currentCount + 1;
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Error submitting comment:", e);
+    }
+}
+
+async function deleteShowcasePost(postId) {
+    if (!confirm("Are you sure you want to delete this edit showcase post?")) return;
+
+    const token = localStorage.getItem('userToken');
+    const headers = {};
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+        const res = await fetch(API_BASE + `/api/showcase/${postId}`, {
+            method: 'DELETE',
+            headers
+        });
+        const d = await res.json();
+        if (d.success) {
+            renderShowcase();
+        } else {
+            alert(d.message);
+        }
+    } catch (e) {
+        console.error("Error deleting showcase post:", e);
+    }
+}
+
+function parseCommentTimestamps(content, postId) {
+    if (!content) return '';
+    // Matches MM:SS or HH:MM:SS format
+    const regex = /\b(?:([0-5]?\d):)?([0-5]?\d):([0-5]\d)\b/g;
+    return content.replace(regex, (match, hrs, mins, secs) => {
+        let totalSeconds = 0;
+        if (hrs !== undefined) {
+            totalSeconds = parseInt(hrs) * 3600 + parseInt(mins) * 60 + parseInt(secs);
+        } else {
+            totalSeconds = parseInt(mins) * 60 + parseInt(secs);
+        }
+        return `<span class="timestamp-btn" onclick="seekShowcaseVideo('${postId}', ${totalSeconds})">${match}</span>`;
+    });
+}
+
+function seekShowcaseVideo(postId, seconds) {
+    // Try YouTube iframe
+    const iframe = document.querySelector(`#showcase-video-${postId} iframe`);
+    if (iframe) {
+        if (iframe.src.includes('youtube.com')) {
+            iframe.contentWindow.postMessage(JSON.stringify({
+                event: 'command',
+                func: 'seekTo',
+                args: [seconds, true]
+            }), '*');
+            iframe.contentWindow.postMessage(JSON.stringify({
+                event: 'command',
+                func: 'playVideo',
+                args: []
+            }), '*');
+        } else if (iframe.src.includes('vimeo.com')) {
+            iframe.contentWindow.postMessage(JSON.stringify({
+                method: 'seekTo',
+                value: seconds
+            }), '*');
+            iframe.contentWindow.postMessage(JSON.stringify({
+                method: 'play'
+            }), '*');
+        }
+    }
+
+    // Try HTML5 video element
+    const video = document.querySelector(`#showcase-video-${postId} video`);
+    if (video) {
+        video.currentTime = seconds;
+        video.play();
+    }
+}
+
+function getVimeoId(url) {
+    if (!url) return null;
+    const regExp = /vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|showcase\/(\d+)\/video\/|video\/|)(\d+)(?:$|\/|\?)/;
+    const match = url.match(regExp);
+    return match ? match[4] : null;
+}
+
+async function renderShowcase() {
+    const container = document.getElementById('content-container');
+    container.innerHTML = getLoadingHTML('Loading video edits...');
+
+    // Toggle centered layout
+    container.classList.remove('intro-centered');
+
+    // Update active nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        if (link.getAttribute('data-path') === 'showcase') {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
+
+    const posts = await fetchShowcases();
+
+    let html = `
+        <div class="preset-hub-hero" style="background: linear-gradient(135deg, #0e051a, #1b0735); border: 1px solid rgba(139, 92, 246, 0.15);">
+            <div class="preset-hub-hero-content">
+                <div>
+                    <span class="preset-hub-platform-pill pc" style="background: rgba(139, 92, 246, 0.2); color: #d8b4fe;">Edit Feed</span>
+                    <h1>Video Edits Showcase</h1>
+                    <p>Share your edits, get peer reviews, and leave frame-by-frame timestamped feedback.</p>
+                </div>
+                <button class="preset-hub-share-btn" onclick="openShowcaseUploadModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Share Your Edit
+                </button>
+            </div>
+        </div>
+    `;
+
+    if (posts.length === 0) {
+        html += `<div style="text-align: center; padding: 60px; background: var(--card-bg); border: 1.5px solid var(--card-border); border-radius: 16px; color: var(--text-secondary);">No edits shared yet. Be the first to show off your work!</div>`;
+        container.innerHTML = html;
+        return;
+    }
+
+    html += `<div class="showcase-grid stagger-in">`;
+
+    posts.forEach(post => {
+        const dateStr = new Date(post.createdAt).toLocaleDateString();
+        const safeTitle = post.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const safeDesc = post.description.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const isLiked = currentUser && post.upvotes && post.upvotes.includes(currentUser.id);
+        const upvotesCount = post.upvotes ? post.upvotes.length : 0;
+        const commentsCount = post.comments ? post.comments.length : 0;
+        const authorRole = post.authorRole || 'member';
+
+        // Render video embed based on platform
+        let videoHtml = '';
+        const ytId = getYouTubeId(post.videoUrl);
+        const vimeoId = getVimeoId(post.videoUrl);
+
+        if (ytId) {
+            videoHtml = `<iframe src="https://www.youtube.com/embed/${ytId}?enablejsapi=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+        } else if (vimeoId) {
+            videoHtml = `<iframe src="https://player.vimeo.com/video/${vimeoId}?api=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+        } else {
+            // Direct video link fallback
+            videoHtml = `<video src="${post.videoUrl}" controls playsinline></video>`;
+        }
+
+        const isAuthor = currentUser && (post.authorId === currentUser.id);
+
+        html += `
+            <div class="showcase-card">
+                <div class="showcase-video-wrapper" id="showcase-video-${post.id}">
+                    ${videoHtml}
+                </div>
+                <div class="showcase-card-body">
+                    <h3 class="showcase-card-title">${safeTitle}</h3>
+                    <p class="showcase-card-desc">${safeDesc}</p>
+                </div>
+                <div class="showcase-card-footer">
+                    <div class="showcase-author-section">
+                        <img src="${post.authorAvatar && post.authorAvatar.startsWith('http') ? post.authorAvatar : API_BASE + (post.authorAvatar || '/avatar.png')}" class="showcase-author-avatar" loading="lazy">
+                        <div>
+                            <div class="showcase-author-name">${post.authorName} ${getRoleBadgeHtml(authorRole)}</div>
+                            <div style="font-size: 11px; color: var(--text-secondary);">${dateStr}</div>
+                        </div>
+                    </div>
+                    <div class="showcase-actions">
+                        <button class="showcase-action-btn ${isLiked ? 'liked' : ''}" onclick="likeShowcasePost('${post.id}', this)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                            </svg>
+                            <span class="showcase-like-count">${upvotesCount}</span>
+                        </button>
+                        <button class="showcase-action-btn" onclick="toggleShowcaseComments('${post.id}')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            <span class="showcase-comment-count" data-post-id="${post.id}">${commentsCount}</span>
+                        </button>
+                        ${isAuthor || (currentUser && currentUser.username === 'admin') ? `
+                            <button class="showcase-action-btn" style="color: #ef4444;" onclick="deleteShowcasePost('${post.id}')" title="Delete Post">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <!-- Comments Section -->
+                <div class="showcase-comments-section" id="showcase-comments-${post.id}">
+                    <div class="showcase-comments-list" id="showcase-comments-list-${post.id}">
+                        ${post.comments && post.comments.length > 0 ? post.comments.map(c => {
+                            const cAvatar = c.authorAvatar || 'https://api.dicebear.com/6.x/initials/svg?seed=Anon';
+                            const cRole = c.authorRole || 'member';
+                            return `
+                                <div class="showcase-comment-bubble">
+                                    <img src="${cAvatar.startsWith('http') ? cAvatar : API_BASE + cAvatar}" class="showcase-comment-avatar" loading="lazy">
+                                    <div class="showcase-comment-body">
+                                        <div class="showcase-comment-author">${c.authorName} ${getRoleBadgeHtml(cRole)}</div>
+                                        <div class="showcase-comment-text">${parseCommentTimestamps(c.content, post.id)}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('') : `<div style="text-align: center; font-size: 12px; color: var(--text-secondary); padding: 10px 0;" class="showcase-no-comments">No comments yet. Leave a review!</div>`}
+                    </div>
+                    <div class="showcase-comment-form">
+                        <input type="text" class="showcase-comment-input" id="showcase-comment-input-${post.id}" placeholder="Type feedback... (Include time like 0:45)">
+                        <button class="showcase-comment-submit" onclick="submitShowcaseComment('${post.id}', 'showcase-comment-input-${post.id}')">Submit</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+
+
+// ==========================================
+// NEW COMMUNITY FEATURES LOGIC
+// ==========================================
+
+// --- 1. GLOBAL SEARCH LOGIC ---
+let searchDebounceTimeout = null;
+async function performSearch(query) {
+    const resultsContainer = document.getElementById('searchResults');
+    if (!query || query.trim().length === 0) {
+        resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b;">Type to start searching...</div>';
+        return;
+    }
+
+    if (searchDebounceTimeout) clearTimeout(searchDebounceTimeout);
+    
+    searchDebounceTimeout = setTimeout(async () => {
+        resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b;">Searching...</div>';
+        try {
+            const res = await fetch(API_BASE + '/api/search?q=' + encodeURIComponent(query));
+            const data = await res.json();
+            
+            if (!data.success || data.results.length === 0) {
+                resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b;">No results found.</div>';
+                return;
+            }
+
+            let html = '';
+            data.results.forEach(item => {
+                let iconSvg = '';
+                if (item.type === 'preset') iconSvg = '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>';
+                else if (item.type === 'showcase') iconSvg = '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+                else if (item.type === 'forum') iconSvg = '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+
+                html += `
+                    <a href="${item.route}" class="search-result-item" onclick="closeModal('searchModal')">
+                        <div class="search-result-icon">${iconSvg}</div>
+                        <div>
+                            <div class="title">${item.title}</div>
+                            <div class="meta">${item.type.charAt(0).toUpperCase() + item.type.slice(1)} â¢ by ${item.authorName}</div>
+                        </div>
+                    </a>
+                `;
+            });
+            resultsContainer.innerHTML = html;
+        } catch (err) {
+            resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444;">Error performing search.</div>';
+        }
+    }, 300);
+}
+
+// --- 2. NOTIFICATIONS LOGIC ---
+let unreadNotifsCount = 0;
+
+async function fetchNotifications() {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(API_BASE + '/api/notifications', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const data = await res.json();
+        if (data.success) {
+            renderNotifications(data.notifications);
+        }
+    } catch (err) {
+        console.error('Failed to fetch notifications:', err);
+    }
+}
+
+function renderNotifications(notifs) {
+    const list = document.getElementById('notifList');
+    const badge = document.getElementById('notifBadge');
+    
+    if (notifs.length === 0) {
+        list.innerHTML = `
+            <div class="notif-empty" style="padding: 30px; text-align: center; color: #64748b;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 10px;"><path stroke-linecap="round" stroke-linejoin="round" d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path stroke-linecap="round" stroke-linejoin="round" d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                <p>No notifications yet</p>
+            </div>`;
+        badge.style.display = 'none';
+        return;
+    }
+
+    unreadNotifsCount = notifs.filter(n => !n.read).length;
+    if (unreadNotifsCount > 0) {
+        badge.textContent = unreadNotifsCount;
+        badge.style.display = 'flex';
+    } else {
+        badge.style.display = 'none';
+    }
+
+    let html = '';
+    notifs.forEach(n => {
+        let iconSvg = '';
+        if (n.type === 'like') iconSvg = '<svg width="18" height="18" fill="currentColor" stroke="none" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>';
+        else if (n.type === 'reply' || n.type === 'comment') iconSvg = '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+        
+        html += `
+            <a href="${n.link}" class="notif-item ${n.read ? '' : 'unread'}" onclick="markNotifRead('${n.id}')">
+                <div class="notif-item-icon" style="${n.type === 'like' ? 'color: #ef4444; background: rgba(239, 68, 68, 0.1);' : ''}">${iconSvg}</div>
+                <div class="notif-item-content">
+                    <p>${n.message}</p>
+                    <span class="notif-item-time">${new Date(n.createdAt).toLocaleDateString()}</span>
+                </div>
+            </a>
+        `;
+    });
+    list.innerHTML = html;
+}
+
+function toggleNotifPanel(e) {
+    if (e) e.stopPropagation();
+    document.getElementById('notifPanel').classList.toggle('active');
+}
+document.addEventListener('click', (e) => {
+    const panel = document.getElementById('notifPanel');
+    const bellBtn = document.getElementById('notifBellBtn');
+    if (panel && panel.classList.contains('active') && !panel.contains(e.target) && !bellBtn.contains(e.target)) {
+        panel.classList.remove('active');
+    }
+});
+
+async function markNotifRead(id) {
+    try {
+        await fetch(API_BASE + '/api/notifications/' + id + '/read', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        fetchNotifications();
+    } catch (err) {
+        console.error(err);
+    }
+}
+async function markAllNotifsRead() {
+    try {
+        await fetch(API_BASE + '/api/notifications/read-all', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        fetchNotifications();
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// Check notifications every 30 seconds if logged in
+setInterval(() => {
+    if (currentUser) fetchNotifications();
+}, 30000);
+
+// --- 3. USER PROFILE LOGIC ---
+async function renderProfile() {
+    const container = document.getElementById('profileContainer');
+    if (!currentUser) {
+        container.innerHTML = '<div style="text-align:center; padding: 50px;"><h2>Please log in to view your profile.</h2></div>';
+        return;
+    }
+
+    container.innerHTML = getLoadingHTML('Loading your profile...');
+
+    try {
+        // We will fetch user's own presets, showcase, and forum posts from the API
+        const [presetsRes, showcaseRes, forumsRes] = await Promise.all([
+            fetch(API_BASE + '/api/presets'),
+            fetch(API_BASE + '/api/showcase'),
+            fetch(API_BASE + '/api/forums')
+        ]);
+        
+        const presets = (await presetsRes.json()).presets || [];
+        const showcase = (await showcaseRes.json()).posts || [];
+        const forums = (await forumsRes.json()).forums || [];
+
+        const myPresets = presets.filter(p => p.authorId === currentUser.id);
+        const myShowcase = showcase.filter(s => s.authorId === currentUser.id);
+        const myForums = forums.filter(f => f.authorId === currentUser.id);
+
+        let html = `
+            <div class="profile-hero" style="${currentUser.profileBanner ? `background: linear-gradient(rgba(27,15,46,0.8), rgba(19,10,33,0.9)), url('${currentUser.profileBanner}') center/cover;` : ''}">
+                <div class="profile-avatar-wrapper">
+                    <img src="${currentUser.profilePic || 'https://api.dicebear.com/6.x/initials/svg?seed=' + currentUser.username}" alt="Profile">
+                </div>
+                <div>
+                    <h1 style="font-size: 32px; margin-bottom: 5px;">${currentUser.username} ${getRoleBadgeHtml(currentUser.role)}</h1>
+                    <p style="color: rgba(255,255,255,0.7); margin-bottom: 10px;">${currentUser.bio || 'No bio provided yet.'}</p>
+                    <button class="btn btn-outline" style="padding: 6px 12px; font-size: 13px;" onclick="openModal('profileModal')">Edit Profile</button>
+                    
+                    <div class="profile-stats">
+                        <div class="stat-block">
+                            <div class="num">${myPresets.length}</div>
+                            <div class="label">Presets</div>
+                        </div>
+                        <div class="stat-block">
+                            <div class="num">${myShowcase.length}</div>
+                            <div class="label">Showcase</div>
+                        </div>
+                        <div class="stat-block">
+                            <div class="num">${myForums.length}</div>
+                            <div class="label">Forum Posts</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="profile-tabs">
+                <div class="profile-tab active" id="tab-presets" onclick="switchProfileTab('presets')">My Presets</div>
+                <div class="profile-tab" id="tab-showcase" onclick="switchProfileTab('showcase')">My Showcase</div>
+                <div class="profile-tab" id="tab-forums" onclick="switchProfileTab('forums')">My Forum Posts</div>
+            </div>
+            
+            <div id="profileTabContent">
+                <!-- Preset Tab Content -->
+                <div id="ptab-presets">
+                    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 20px;">
+                        <h3>Uploaded Presets</h3>
+                        <button class="btn btn-primary" onclick="openModal('userUploadPresetModal')">Upload New Preset</button>
+                    </div>
+                    ${myPresets.length === 0 ? '<p style="color: #64748b;">You haven\\'t uploaded any presets yet.</p>' : 
+                        '<div class="preset-grid">' + myPresets.map(p => `
+                            <div class="preset-card">
+                                <h3>${p.title}</h3>
+                                <p>${p.description}</p>
+                                <a href="${p.platformType === 'mobile' ? '#presets-mobile' : '#presets-pc'}" class="btn btn-outline">View in Hub</a>
+                            </div>
+                        `).join('') + '</div>'
+                    }
+                </div>
+                
+                <div id="ptab-showcase" style="display:none;">
+                    <h3>Showcase Uploads</h3>
+                    ${myShowcase.length === 0 ? '<p style="color: #64748b;">You haven\\'t posted anything to the showcase yet.</p>' : 
+                        '<div class="preset-grid">' + myShowcase.map(s => `
+                            <div class="preset-card">
+                                <h3>${s.title}</h3>
+                                <a href="#showcase" class="btn btn-outline">View Showcase</a>
+                            </div>
+                        `).join('') + '</div>'
+                    }
+                </div>
+                
+                <div id="ptab-forums" style="display:none;">
+                    <h3>Forum Threads</h3>
+                    ${myForums.length === 0 ? '<p style="color: #64748b;">You haven\\'t posted any forum threads yet.</p>' : 
+                        '<div class="forum-list">' + myForums.map(f => `
+                            <div class="forum-post-card" onclick="window.location.hash='#forum-post-${f.id}'" style="cursor:pointer; margin-bottom:10px;">
+                                <div class="forum-author-info">
+                                    <div class="forum-author">${f.title}</div>
+                                    <div class="forum-date">${new Date(f.createdAt).toLocaleDateString()}</div>
+                                </div>
+                            </div>
+                        `).join('') + '</div>'
+                    }
+                </div>
+            </div>
+        `;
+        container.innerHTML = html;
+    } catch (err) {
+        console.error(err);
+        container.innerHTML = '<div style="color:red; text-align:center;">Failed to load profile data.</div>';
+    }
+}
+
+function switchProfileTab(tabName) {
+    document.querySelectorAll('.profile-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + tabName).classList.add('active');
+    
+    document.getElementById('ptab-presets').style.display = 'none';
+    document.getElementById('ptab-showcase').style.display = 'none';
+    document.getElementById('ptab-forums').style.display = 'none';
+    
+    document.getElementById('ptab-' + tabName).style.display = 'block';
+}
+
+// Hook into existing hash router
+const originalHashChange = window.onhashchange;
+window.addEventListener('hashchange', () => {
+    const hash = window.location.hash;
+    if (hash === '#profile') {
+        document.querySelectorAll('.page-section').forEach(el => el.style.display = 'none');
+        document.getElementById('profile').style.display = 'block';
+        document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+        const profileLink = document.getElementById('sidebarProfileLink');
+        if (profileLink) profileLink.querySelector('a').classList.add('active');
+        renderProfile();
+    }
+});
+
+// Show/Hide sidebar profile link based on auth
+function updateSidebarAuth() {
+    const sidebarProfileLink = document.getElementById('sidebarProfileLink');
+    if (sidebarProfileLink) {
+        sidebarProfileLink.style.display = currentUser ? 'block' : 'none';
+    }
+}
+
+// Modify updateAuthUI to trigger updateSidebarAuth and fetchNotifications
+const originalUpdateAuthUI = updateAuthUI;
+updateAuthUI = function() {
+    originalUpdateAuthUI();
+    updateSidebarAuth();
+    if (currentUser) {
+        fetchNotifications();
+    }
+}
+
+// --- 4. USER UPLOAD PRESET LOGIC ---
+document.addEventListener('DOMContentLoaded', () => {
+    const userPresetForm = document.getElementById('userUploadPresetForm');
+    if (userPresetForm) {
+        userPresetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('userPresetSubmitBtn');
+            submitBtn.textContent = 'Uploading...';
+            submitBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('title', document.getElementById('userPresetTitle').value);
+            formData.append('description', document.getElementById('userPresetDesc').value);
+            formData.append('category', document.getElementById('userPresetCategory').value);
+            formData.append('platform', 'Universal'); // Hardcoded default, can expand later
+            formData.append('platformType', document.getElementById('userPresetPlatform').value);
+            formData.append('previewUrl', document.getElementById('userPresetPreview').value || '');
+            
+            const fileInput = document.getElementById('userPresetFile');
+            const externalUrl = document.getElementById('userPresetUrl').value;
+
+            if (fileInput.files.length > 0) {
+                formData.append('file', fileInput.files[0]);
+            } else if (externalUrl) {
+                formData.append('externalUrl', externalUrl);
+            } else {
+                alert('Please upload a file or provide an external link.');
+                submitBtn.textContent = 'Submit Preset';
+                submitBtn.disabled = false;
+                return;
+            }
+
+            try {
+                const res = await fetch(API_BASE + '/api/presets', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeModal('userUploadPresetModal');
+                    userPresetForm.reset();
+                    if (window.location.hash === '#profile') renderProfile();
+                    showToast('Preset uploaded successfully!');
+                } else {
+                    alert(data.message || 'Upload failed');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred');
+            } finally {
+                submitBtn.textContent = 'Submit Preset';
+                submitBtn.disabled = false;
+            }
+        });
+    }
+});
