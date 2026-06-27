@@ -51,10 +51,10 @@ if (serviceAccount) {
         console.log(`[Diagnostic] Ends with standard footer: ${pk.trim().endsWith('-----END PRIVATE KEY-----')}`);
         console.log(`[Diagnostic] Contains actual newlines: ${pk.includes('\n')}`);
         console.log(`[Diagnostic] Contains literal '\\n' text: ${pk.includes('\\n')}`);
-        
+
         // Bulletproof reconstruction of the private key PEM block
         let cleanKey = pk.trim();
-        
+
         // Remove trailing comma if copied from JSON file
         if (cleanKey.endsWith(',')) {
             cleanKey = cleanKey.slice(0, -1).trim();
@@ -67,31 +67,31 @@ if (serviceAccount) {
         if (cleanKey.startsWith("'") && cleanKey.endsWith("'")) {
             cleanKey = cleanKey.slice(1, -1).trim();
         }
-        
+
         const header = '-----BEGIN PRIVATE KEY-----';
         const footer = '-----END PRIVATE KEY-----';
-        
+
         const headerIndex = cleanKey.indexOf(header);
         const footerIndex = cleanKey.indexOf(footer);
-        
+
         if (headerIndex !== -1 && footerIndex !== -1) {
             // Extract the precise key block, discarding any leading/trailing junk (like escaped quotes or commas)
             const keyBlock = cleanKey.slice(headerIndex, footerIndex + footer.length);
-            
+
             // Extract the raw base64 data by removing headers, spaces, tabs, and any newline representations
             const base64Data = keyBlock
                 .replace(header, '')
                 .replace(footer, '')
                 .replace(/\\n/g, '')  // Remove escaped newlines
                 .replace(/\s+/g, ''); // Remove all raw spaces/newlines/tabs
-            
+
             // Reconstruct the PEM block with standard newlines
             cleanKey = `${header}\n${base64Data}\n${footer}`;
         } else {
             // Fallback replacement if headers aren't matchable
             cleanKey = cleanKey.replace(/\\n/g, '\n');
         }
-        
+
         // Ensure private key has normalized newlines and correct format
         if (serviceAccount.privateKey) {
             serviceAccount.privateKey = cleanKey;
@@ -126,8 +126,8 @@ if (process.env.CLOUDINARY_URL) {
 const app = express();
 const PORT = 3000;
 
-const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'admin123';
+const ADMIN_USER = 'theeditorscommunity';
+const ADMIN_PASS = 'CristianoRonaldo7';
 const AUTH_TOKEN = 'secret-admin-token-123';
 const JWT_SECRET = 'super-secret-jwt-key-for-users'; // In production, use env variable
 
@@ -222,7 +222,7 @@ app.post('/api/users/register', upload.fields([{ name: 'profilePic', maxCount: 1
         };
 
         await db.collection('users').doc(userId).set(newUser);
-        
+
         const token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '7d' });
         res.json({ success: true, token, user: { id: userId, username, email, name, bio: newUser.bio, profilePic, profileBanner, bookmarks: [] } });
     } catch (err) {
@@ -238,11 +238,11 @@ app.post('/api/users/login', async (req, res) => {
         if (userSnap.empty) {
             return res.status(400).json({ success: false, message: 'Invalid credentials' });
         }
-        
+
         const user = userSnap.docs[0].data();
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ success: false, message: 'Invalid credentials' });
-        
+
         const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
         res.json({ success: true, token, user: { id: user.id, username: user.username, email: user.email, name: user.name, bio: user.bio || '', profilePic: user.profilePic, profileBanner: user.profileBanner, bookmarks: user.bookmarks || [] } });
     } catch (err) {
@@ -273,7 +273,7 @@ const authenticateUserOptional = (req, res, next) => {
         try {
             const decoded = jwt.verify(token, JWT_SECRET);
             req.userId = decoded.id;
-        } catch (err) {}
+        } catch (err) { }
     }
     next();
 };
@@ -318,9 +318,9 @@ app.post('/api/users/profile', authenticateUser, upload.fields([{ name: 'profile
         const userDocRef = db.collection('users').doc(req.userId);
         const userDoc = await userDocRef.get();
         if (!userDoc.exists) return res.status(404).json({ success: false, message: 'User not found' });
-        
+
         const user = userDoc.data();
-        
+
         if (req.body.name) user.name = req.body.name;
         if (req.body.email) user.email = req.body.email;
         if (req.body.username) user.username = req.body.username;
@@ -328,16 +328,16 @@ app.post('/api/users/profile', authenticateUser, upload.fields([{ name: 'profile
         if (req.body.password) {
             user.password = await bcrypt.hash(req.body.password, 10);
         }
-        
+
         if (req.files && req.files['profilePic']) {
             user.profilePic = await uploadToCloudinary(req.files['profilePic'][0]);
         }
         if (req.files && req.files['profileBanner']) {
             user.profileBanner = await uploadToCloudinary(req.files['profileBanner'][0]);
         }
-        
+
         await userDocRef.set(user);
-        
+
         res.json({ success: true, message: 'Profile updated', user: { id: user.id, username: user.username, email: user.email, name: user.name, bio: user.bio || '', profilePic: user.profilePic, profileBanner: user.profileBanner, bookmarks: user.bookmarks || [] } });
     } catch (err) {
         console.error('Profile update error:', err);
@@ -993,14 +993,14 @@ app.post('/api/showcase/:id/comment', authenticateUserOptional, async (req, res)
 app.delete('/api/showcase/:id', async (req, res) => {
     const authHeader = req.headers.authorization;
     const isAdmin = authHeader === `Bearer ${AUTH_TOKEN}`;
-    
+
     let tokenUserId = null;
     if (!isAdmin && authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.split(' ')[1];
         try {
             const decoded = jwt.verify(token, JWT_SECRET);
             tokenUserId = decoded.id;
-        } catch (err) {}
+        } catch (err) { }
     }
 
     try {
@@ -1104,12 +1104,12 @@ app.get('/api/search', async (req, res) => {
 
     try {
         const results = [];
-        
+
         // Search Presets
         const presetsSnap = await db.collection('presets').get();
         presetsSnap.forEach(doc => {
             const p = doc.data();
-            if ((p.title||'').toLowerCase().includes(query) || (p.description||'').toLowerCase().includes(query) || (p.authorName||'').toLowerCase().includes(query)) {
+            if ((p.title || '').toLowerCase().includes(query) || (p.description || '').toLowerCase().includes(query) || (p.authorName || '').toLowerCase().includes(query)) {
                 results.push({ type: 'preset', id: p.id, title: p.title, authorName: p.authorName, route: p.platformType === 'mobile' ? '#presets-mobile' : '#presets-pc', createdAt: p.createdAt });
             }
         });
@@ -1118,7 +1118,7 @@ app.get('/api/search', async (req, res) => {
         const showcaseSnap = await db.collection('showcase').get();
         showcaseSnap.forEach(doc => {
             const s = doc.data();
-            if ((s.title||'').toLowerCase().includes(query) || (s.description||'').toLowerCase().includes(query) || (s.authorName||'').toLowerCase().includes(query)) {
+            if ((s.title || '').toLowerCase().includes(query) || (s.description || '').toLowerCase().includes(query) || (s.authorName || '').toLowerCase().includes(query)) {
                 results.push({ type: 'showcase', id: s.id, title: s.title, authorName: s.authorName, route: '#showcase', createdAt: s.createdAt });
             }
         });
@@ -1127,7 +1127,7 @@ app.get('/api/search', async (req, res) => {
         const forumsSnap = await db.collection('forums').get();
         forumsSnap.forEach(doc => {
             const f = doc.data();
-            if ((f.title||'').toLowerCase().includes(query) || (f.content||'').toLowerCase().includes(query) || (f.authorName||'').toLowerCase().includes(query)) {
+            if ((f.title || '').toLowerCase().includes(query) || (f.content || '').toLowerCase().includes(query) || (f.authorName || '').toLowerCase().includes(query)) {
                 results.push({ type: 'forum', id: f.id, title: f.title, authorName: f.authorName, route: `#forum-post-${f.id}`, createdAt: f.createdAt });
             }
         });
