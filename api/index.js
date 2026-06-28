@@ -19,6 +19,7 @@ if (false) {
     fs.readFileSync(path.join(__dirname, '..', 'admin.js'));
     fs.readFileSync(path.join(__dirname, '..', 'logo.png'));
     fs.readFileSync(path.join(__dirname, '..', 'admin-bg.jpg'));
+    fs.readFileSync(path.join(__dirname, '..', 'data.json'));
 }
 
 // Initialize Firebase Admin
@@ -803,12 +804,29 @@ app.post('/api/login', (req, res) => {
 app.get('/api/data', async (req, res) => {
     try {
         const siteDoc = await db.collection('site').doc('data').get();
-        if (!siteDoc.exists) {
+        const docData = siteDoc.exists ? siteDoc.data() : null;
+        
+        // If Firestore is empty or missing core content pages, seed it from local data.json
+        if (!docData || !docData['windows-softwares']) {
+            const localDataPath = path.join(__dirname, '..', 'data.json');
+            if (fs.existsSync(localDataPath)) {
+                try {
+                    const localData = JSON.parse(fs.readFileSync(localDataPath, 'utf8'));
+                    await db.collection('site').doc('data').set(localData);
+                    console.log('[Firestore Seed] Successfully seeded Firestore site/data with local data.json.');
+                    return res.json(localData);
+                } catch (seedErr) {
+                    console.error('[Firestore Seed] Failed to seed database:', seedErr);
+                }
+            }
+        }
+        
+        if (!docData) {
             return res.status(404).json({ error: 'Site data not found' });
         }
-        res.json(siteDoc.data());
+        res.json(docData);
     } catch (err) {
-        console.error('Error reading Firestore site/data:', err);
+        console.error('Error reading/seeding Firestore site/data:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
