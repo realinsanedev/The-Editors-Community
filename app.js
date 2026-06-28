@@ -884,6 +884,9 @@ function updateAuthUI() {
     if (hash === 'bookmarks') {
         renderBookmarks();
     }
+    if (hash === 'profile') {
+        renderPage();
+    }
 }
 
 // Modal handling
@@ -3848,7 +3851,7 @@ async function fetchNotifications() {
     if (!currentUser) return;
     try {
         const res = await fetch(API_BASE + '/api/notifications', {
-            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('userToken') }
         });
         const data = await res.json();
         if (data.success) {
@@ -3916,7 +3919,7 @@ async function markNotifRead(id) {
     try {
         await fetch(API_BASE + '/api/notifications/' + id + '/read', {
             method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('userToken') }
         });
         fetchNotifications();
     } catch (err) {
@@ -3927,7 +3930,7 @@ async function markAllNotifsRead() {
     try {
         await fetch(API_BASE + '/api/notifications/read-all', {
             method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('userToken') }
         });
         fetchNotifications();
     } catch (err) {
@@ -4118,7 +4121,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await fetch(API_BASE + '/api/presets', {
                     method: 'POST',
                     headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        'Authorization': 'Bearer ' + localStorage.getItem('userToken')
                     },
                     body: formData
                 });
