@@ -4440,6 +4440,14 @@ body.dark-theme .password-banner {
     height: 38px !important;
 }
 
+.auth-modal .form-control.has-icon {
+    padding-left: 40px !important;
+}
+
+.auth-modal .form-control.has-toggle {
+    padding-right: 44px !important;
+}
+
 .auth-modal textarea.form-control {
     height: auto !important;
     min-height: 48px !important;
