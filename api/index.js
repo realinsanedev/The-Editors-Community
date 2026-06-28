@@ -385,7 +385,7 @@ app.get('/api/auth/google/callback', async (req, res) => {
         res.redirect(`${REDIRECT_BASE_URL}/?oauth_token=${token}`);
     } catch (err) {
         console.error('Google OAuth Callback Error:', err);
-        res.redirect(`${REDIRECT_BASE_URL}/?error=Google+login+failed`);
+        res.redirect(`${REDIRECT_BASE_URL}/?error=${encodeURIComponent('Google login failed: ' + err.message)}`);
     }
 });
 
@@ -487,7 +487,7 @@ app.get('/api/auth/discord/callback', async (req, res) => {
         res.redirect(`${REDIRECT_BASE_URL}/?oauth_token=${token}`);
     } catch (err) {
         console.error('Discord OAuth Callback Error:', err);
-        res.redirect(`${REDIRECT_BASE_URL}/?error=Discord+login+failed`);
+        res.redirect(`${REDIRECT_BASE_URL}/?error=${encodeURIComponent('Discord login failed: ' + err.message)}`);
     }
 });
 
