@@ -134,6 +134,22 @@ const JWT_SECRET = 'super-secret-jwt-key-for-users'; // In production, use env v
 app.use(cors());
 app.use(express.json());
 
+app.get('/api/diagnose', (req, res) => {
+    try {
+        const rootFiles = fs.readdirSync(path.join(__dirname, '..'));
+        const apiFiles = fs.readdirSync(__dirname);
+        res.json({
+            success: true,
+            __dirname,
+            parentDir: path.join(__dirname, '..'),
+            rootFiles,
+            apiFiles
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Set Cache-Control header globally on all API endpoints to prevent stale cached data
 app.use('/api', (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
