@@ -171,6 +171,11 @@ function showToast(message, isError = false) {
     }, 3000);
 }
 
+function triggerOAuth(provider, event) {
+    if (event) event.preventDefault();
+    window.location.href = API_BASE + `/api/auth/${provider}`;
+}
+
 async function init() {
     // Check for OAuth token or error in URL query
     const urlParams = new URLSearchParams(window.location.search);
