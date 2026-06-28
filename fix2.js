@@ -9,6 +9,6 @@ try {
   JSON.parse(txt);
   fs.writeFileSync('data.json', txt);
   console.log('Fixed JSON successfully!');
-} catch(e) {
+} catch (e) {
   console.error('Still invalid:', e);
 }
