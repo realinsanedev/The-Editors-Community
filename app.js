@@ -4022,7 +4022,7 @@ async function renderProfile() {
         container.innerHTML = html;
     } catch (err) {
         console.error(err);
-        container.innerHTML = '<div style="color:red; text-align:center;">Failed to load profile data.</div>';
+        container.innerHTML = `<div style="color:red; text-align:center; padding: 20px;">Failed to load profile data: ${err.message || err}</div>`;
     }
 }
 
