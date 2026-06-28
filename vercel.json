@@ -2,15 +2,7 @@
   "version": 2,
   "functions": {
     "api/index.js": {
-      "includeFiles": [
-        "index.html",
-        "admin.html",
-        "main.css",
-        "app.js",
-        "admin.js",
-        "logo.png",
-        "admin-bg.jpg"
-      ]
+      "includeFiles": "../*"
     }
   },
   "rewrites": [
