@@ -1,5 +1,18 @@
 {
   "version": 2,
+  "functions": {
+    "api/index.js": {
+      "includeFiles": [
+        "index.html",
+        "admin.html",
+        "main.css",
+        "app.js",
+        "admin.js",
+        "logo.png",
+        "admin-bg.jpg"
+      ]
+    }
+  },
   "rewrites": [
     {
       "source": "/api/:path*",
@@ -7,6 +20,10 @@
     },
     {
       "source": "/admin",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/(.*)",
       "destination": "/api/index.js"
     }
   ]
