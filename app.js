@@ -135,7 +135,61 @@ function updateSidebarVisibility() {
     });
 }
 
+function showToast(message, isError = false) {
+    let toast = document.getElementById('toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast';
+        toast.style.position = 'fixed';
+        toast.style.bottom = '20px';
+        toast.style.right = '20px';
+        toast.style.padding = '12px 24px';
+        toast.style.borderRadius = '8px';
+        toast.style.color = '#ffffff';
+        toast.style.fontSize = '14px';
+        toast.style.fontWeight = '500';
+        toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+        toast.style.zIndex = '9999';
+        toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.backgroundColor = isError ? '#ef4444' : '#10b981';
+    
+    // Show toast
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+    }, 50);
+
+    // Hide toast
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+    }, 3000);
+}
+
 async function init() {
+    // Check for OAuth token or error in URL query
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthToken = urlParams.get('oauth_token');
+    const authError = urlParams.get('error');
+
+    if (oauthToken) {
+        localStorage.setItem('userToken', oauthToken);
+        showToast('Signed in successfully!');
+        // Clean URL query params
+        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.hash;
+        window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+    } else if (authError) {
+        showToast(decodeURIComponent(authError), true);
+        // Clean URL query params
+        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.hash;
+        window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+    }
+
     // 1. Try to load data from localStorage first (instant load)
     let cachedData = null;
     try {

@@ -261,6 +261,236 @@ app.post('/api/users/login', async (req, res) => {
     }
 });
 
+const https = require('https');
+const querystring = require('querystring');
+
+// Helper to make HTTPS requests
+function makeRequest(options, postData = null) {
+    return new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => data += chunk);
+            res.on('end', () => {
+                try {
+                    const parsed = JSON.parse(data);
+                    if (res.statusCode >= 200 && res.statusCode < 300) {
+                        resolve(parsed);
+                    } else {
+                        reject(new Error(parsed.error_description || parsed.error || `HTTP ${res.statusCode}`));
+                    }
+                } catch (e) {
+                    reject(new Error(`Failed to parse response: ${data}`));
+                }
+            });
+        });
+        req.on('error', (err) => reject(err));
+        if (postData) {
+            req.write(postData);
+        }
+        req.end();
+    });
+}
+
+// Google OAuth redirect
+app.get('/api/auth/google', (req, res) => {
+    const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+    const REDIRECT_BASE_URL = process.env.REDIRECT_BASE_URL || 'https://theeditorscommunity.vercel.app';
+    const redirectUri = `${REDIRECT_BASE_URL}/api/auth/google/callback`;
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent('openid email profile')}`;
+    res.redirect(googleAuthUrl);
+});
+
+// Google OAuth Callback
+app.get('/api/auth/google/callback', async (req, res) => {
+    const { code } = req.query;
+    const REDIRECT_BASE_URL = process.env.REDIRECT_BASE_URL || 'https://theeditorscommunity.vercel.app';
+    
+    if (!code) {
+        return res.redirect(`${REDIRECT_BASE_URL}/?error=No+auth+code+returned`);
+    }
+
+    const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+    const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = `${REDIRECT_BASE_URL}/api/auth/google/callback`;
+
+    try {
+        // Exchange code for token
+        const tokenPostData = querystring.stringify({
+            code,
+            client_id: GOOGLE_CLIENT_ID,
+            client_secret: GOOGLE_CLIENT_SECRET,
+            redirect_uri: redirectUri,
+            grant_type: 'authorization_code'
+        });
+
+        const tokenRes = await makeRequest({
+            hostname: 'oauth2.googleapis.com',
+            path: '/token',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Length': Buffer.byteLength(tokenPostData)
+            }
+        }, tokenPostData);
+
+        const accessToken = tokenRes.access_token;
+
+        // Fetch user profile info
+        const userProfile = await makeRequest({
+            hostname: 'www.googleapis.com',
+            path: '/oauth2/v3/userinfo',
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        const email = userProfile.email;
+        const name = userProfile.name || userProfile.given_name || 'Google User';
+        const profilePic = userProfile.picture || '';
+
+        if (!email) {
+            return res.redirect(`${REDIRECT_BASE_URL}/?error=Email+not+provided+by+Google`);
+        }
+
+        // Check if user already exists
+        let userSnap = await db.collection('users').where('email', '==', email).get();
+        let user;
+        let userId;
+
+        if (userSnap.empty) {
+            // Register a new user
+            userId = uuidv4();
+            const username = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '') + Math.floor(1000 + Math.random() * 9000);
+            const newUser = {
+                id: userId,
+                username,
+                email,
+                name,
+                bio: '',
+                password: '', // OAuth accounts do not have password hashes locally
+                profilePic,
+                profileBanner: '',
+                authProvider: 'google',
+                bookmarks: []
+            };
+            await db.collection('users').doc(userId).set(newUser);
+            user = newUser;
+        } else {
+            user = userSnap.docs[0].data();
+            userId = user.id;
+        }
+
+        const token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '7d' });
+        res.redirect(`${REDIRECT_BASE_URL}/?oauth_token=${token}`);
+    } catch (err) {
+        console.error('Google OAuth Callback Error:', err);
+        res.redirect(`${REDIRECT_BASE_URL}/?error=Google+login+failed`);
+    }
+});
+
+// Discord OAuth redirect
+app.get('/api/auth/discord', (req, res) => {
+    const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+    const REDIRECT_BASE_URL = process.env.REDIRECT_BASE_URL || 'https://theeditorscommunity.vercel.app';
+    const redirectUri = `${REDIRECT_BASE_URL}/api/auth/discord/callback`;
+    const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent('identify email')}`;
+    res.redirect(discordAuthUrl);
+});
+
+// Discord OAuth Callback
+app.get('/api/auth/discord/callback', async (req, res) => {
+    const { code } = req.query;
+    const REDIRECT_BASE_URL = process.env.REDIRECT_BASE_URL || 'https://theeditorscommunity.vercel.app';
+    
+    if (!code) {
+        return res.redirect(`${REDIRECT_BASE_URL}/?error=No+auth+code+returned`);
+    }
+
+    const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+    const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
+    const redirectUri = `${REDIRECT_BASE_URL}/api/auth/discord/callback`;
+
+    try {
+        // Exchange code for token
+        const tokenPostData = querystring.stringify({
+            code,
+            client_id: DISCORD_CLIENT_ID,
+            client_secret: DISCORD_CLIENT_SECRET,
+            redirect_uri: redirectUri,
+            grant_type: 'authorization_code',
+            scope: 'identify email'
+        });
+
+        const tokenRes = await makeRequest({
+            hostname: 'discord.com',
+            path: '/api/oauth2/token',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Length': Buffer.byteLength(tokenPostData)
+            }
+        }, tokenPostData);
+
+        const accessToken = tokenRes.access_token;
+
+        // Fetch user profile info
+        const userProfile = await makeRequest({
+            hostname: 'discord.com',
+            path: '/api/users/@me',
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        const email = userProfile.email;
+        const name = userProfile.global_name || userProfile.username || 'Discord User';
+        const discordUsername = userProfile.username || 'discord_user';
+        let profilePic = '';
+        if (userProfile.avatar) {
+            profilePic = `https://cdn.discordapp.com/avatars/${userProfile.id}/${userProfile.avatar}.png`;
+        }
+
+        if (!email) {
+            return res.redirect(`${REDIRECT_BASE_URL}/?error=Email+not+provided+by+Discord`);
+        }
+
+        // Check if user already exists
+        let userSnap = await db.collection('users').where('email', '==', email).get();
+        let user;
+        let userId;
+
+        if (userSnap.empty) {
+            // Register a new user
+            userId = uuidv4();
+            const newUser = {
+                id: userId,
+                username: discordUsername + Math.floor(1000 + Math.random() * 9000),
+                email,
+                name,
+                bio: '',
+                password: '', // OAuth accounts do not have password hashes locally
+                profilePic,
+                profileBanner: '',
+                authProvider: 'discord',
+                bookmarks: []
+            };
+            await db.collection('users').doc(userId).set(newUser);
+            user = newUser;
+        } else {
+            user = userSnap.docs[0].data();
+            userId = user.id;
+        }
+
+        const token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '7d' });
+        res.redirect(`${REDIRECT_BASE_URL}/?oauth_token=${token}`);
+    } catch (err) {
+        console.error('Discord OAuth Callback Error:', err);
+        res.redirect(`${REDIRECT_BASE_URL}/?error=Discord+login+failed`);
+    }
+});
+
 const authenticateUser = (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
