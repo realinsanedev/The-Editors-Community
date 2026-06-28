@@ -135,6 +135,31 @@ function updateSidebarVisibility() {
     });
 }
 
+function getRoleBadgeHtml(role) {
+    if (!role) return '';
+    role = role.toLowerCase();
+    
+    let bg = '#64748b'; // default member gray
+    let text = 'Member';
+    
+    if (role === 'admin') {
+        bg = '#ef4444'; // Admin red
+        text = 'Admin';
+    } else if (role === 'moderator' || role === 'mod') {
+        bg = '#3b82f6'; // Mod blue
+        text = 'Mod';
+    } else if (role === 'creator') {
+        bg = '#10b981'; // Creator green
+        text = 'Creator';
+    } else if (role === 'member') {
+        return ''; // Don't show badge for basic members
+    } else {
+        text = role.charAt(0).toUpperCase() + role.slice(1);
+    }
+    
+    return `<span class="role-badge" style="background: ${bg}; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600; text-transform: uppercase; display: inline-block; vertical-align: middle; line-height: 1;">${text}</span>`;
+}
+
 function showToast(message, isError = false) {
     let toast = document.getElementById('toast');
     if (!toast) {
