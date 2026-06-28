@@ -900,7 +900,7 @@ function updatePreview() {
         <html>
         <head>
             <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
-            <link rel="stylesheet" href="styles.css">
+            <link rel="stylesheet" href="main.css">
             <style>
                 body { background: #fff; padding: 20px; font-family: 'Inter Tight', sans-serif; color: #000; margin: 0; overflow-x: hidden; }
                 #content-container { max-width: 100%; margin: 0 auto; }
