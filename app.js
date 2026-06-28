@@ -331,6 +331,15 @@ function renderPage() {
         renderBookmarks();
         return;
     }
+    if (hash === 'profile') {
+        container.innerHTML = `
+            <section id="profile" class="page-section" style="display: block;">
+                <div id="profileContainer"></div>
+            </section>
+        `;
+        renderProfile();
+        return;
+    }
     if (hash === 'showcase') {
         renderShowcase();
         return;
@@ -4028,19 +4037,7 @@ function switchProfileTab(tabName) {
     document.getElementById('ptab-' + tabName).style.display = 'block';
 }
 
-// Hook into existing hash router
-const originalHashChange = window.onhashchange;
-window.addEventListener('hashchange', () => {
-    const hash = window.location.hash;
-    if (hash === '#profile') {
-        document.querySelectorAll('.page-section').forEach(el => el.style.display = 'none');
-        document.getElementById('profile').style.display = 'block';
-        document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-        const profileLink = document.getElementById('sidebarProfileLink');
-        if (profileLink) profileLink.querySelector('a').classList.add('active');
-        renderProfile();
-    }
-});
+// Profile hash router handled in main renderPage()
 
 // Show/Hide sidebar profile link based on auth
 function updateSidebarAuth() {
