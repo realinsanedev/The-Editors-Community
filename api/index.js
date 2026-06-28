@@ -12,6 +12,15 @@ const cloudinary = require('cloudinary').v2;
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 
+// Dummy block to force Vercel NFT (Node File Trace) to bundle static assets
+if (false) {
+    fs.readFileSync(path.join(__dirname, '..', 'main.css'));
+    fs.readFileSync(path.join(__dirname, '..', 'app.js'));
+    fs.readFileSync(path.join(__dirname, '..', 'admin.js'));
+    fs.readFileSync(path.join(__dirname, '..', 'logo.png'));
+    fs.readFileSync(path.join(__dirname, '..', 'admin-bg.jpg'));
+}
+
 // Initialize Firebase Admin
 let serviceAccount;
 
