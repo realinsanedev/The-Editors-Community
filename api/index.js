@@ -1339,6 +1339,25 @@ app.post('/api/admin/users/:id/unban', async (req, res) => {
     }
 });
 
+// POST /api/admin/users/:id/role - change a user's role
+app.post('/api/admin/users/:id/role', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader !== `Bearer ${AUTH_TOKEN}`) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    const { role } = req.body;
+    if (!role) {
+        return res.status(400).json({ success: false, message: 'Role is required' });
+    }
+    try {
+        await db.collection('users').doc(req.params.id).update({ role: role.toLowerCase() });
+        res.json({ success: true, message: 'User role updated' });
+    } catch (err) {
+        console.error('Error updating user role:', err);
+        res.status(500).json({ success: false, message: 'Server error updating user role' });
+    }
+});
+
 // DELETE /api/admin/users/:id — permanently delete a user
 app.delete('/api/admin/users/:id', async (req, res) => {
     const authHeader = req.headers.authorization;

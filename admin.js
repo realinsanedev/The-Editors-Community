@@ -1446,7 +1446,14 @@ function renderAdminUsersTable() {
                 </div>
             </td>
             <td style="color:var(--text-secondary);font-size:13px;">${user.email || '—'}</td>
-            <td><span class="preset-type-badge" style="${roleBadgeStyle}">${roleLabel}</span></td>
+            <td>
+                <select onchange="updateUserRole('${user.id}', '${safeUsername}', this.value)" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; border: 1.5px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); cursor: pointer; font-weight: 600;">
+                    <option value="member" ${roleLabel === 'member' ? 'selected' : ''}>Member</option>
+                    <option value="creator" ${roleLabel === 'creator' ? 'selected' : ''}>Creator</option>
+                    <option value="mod" ${roleLabel === 'mod' ? 'selected' : ''}>Mod</option>
+                    <option value="admin" ${roleLabel === 'admin' ? 'selected' : ''}>Admin</option>
+                </select>
+            </td>
             <td style="color:var(--text-secondary);font-size:13px;">${joined}</td>
             <td style="text-align:right;">
                 <div style="display:flex;gap:6px;justify-content:flex-end;">
@@ -1505,6 +1512,29 @@ async function deleteUserAdmin(userId, username) {
         }
     } catch (e) {
         showToast('Network error deleting user.', true);
+    }
+}
+
+async function updateUserRole(userId, username, newRole) {
+    try {
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch(`${API_BASE}/api/admin/users/${userId}/role`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ role: newRole })
+        });
+        const json = await res.json();
+        if (json.success) {
+            showToast(`Role of "${username}" updated to ${newRole.toUpperCase()} successfully!`);
+            await loadAdminUsers();
+        } else {
+            showToast(json.message || 'Failed to update user role.', true);
+        }
+    } catch (e) {
+        showToast('Network error updating user role.', true);
     }
 }
 
